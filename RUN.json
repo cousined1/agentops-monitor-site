@@ -28,10 +28,11 @@
     "railway": {
       "status": "live",
       "url": "https://agentops-monitor-site-production.up.railway.app",
-      "deploymentId": "ebbce37b-45db-4e14-a268-dbc05ac3c953",
+      "deploymentId": "5e7bf6cc-eb2b-4f60-9dc2-5fcdad6e48fa",
       "region": "us-west2",
       "health": "ok",
-      "sha": "pending safe restart; GIT_SHA configured with deploy skipped during incident"
+      "artifactSha": "2f237d08cb74b2a912a6634ad45716b52e2b7c97",
+      "healthSha": "2f237d08cb74b2a912a6634ad45716b52e2b7c97"
     }
   },
   "risks": [
