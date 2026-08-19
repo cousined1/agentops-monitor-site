@@ -6,7 +6,9 @@
   "currentDirection": "A2 Tufte data-ink",
   "validators": {
     "validate_site": "pass",
-    "validate_saas": "pass"
+    "validate_saas": "pass",
+    "v3_validate_site": "pass",
+    "v3_validate_saas": "pass"
   },
   "visual": {
     "status": "pass",
