@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" role="img" aria-label="AgentOps Monitor logo and tagline">
+  <rect width="1200" height="630" fill="#0e1116"/>
+  <g fill="#56d364" font-family="ui-monospace, 'JetBrains Mono', 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace" font-weight="700">
+    <text x="80" y="180" font-size="48">▌▐ AGENTOPS MONITOR</text>
+    <text x="80" y="260" font-size="84">Trace every tool call.</text>
+    <text x="80" y="360" font-size="84">Govern every dollar.</text>
+    <text x="80" y="460" font-size="84">Audit every decision.</text>
+    <text x="80" y="560" font-size="28" fill="#8b95a7">Pre-launch observability for AI agents</text>
+  </g>
+  <g stroke="#56d364" stroke-width="3">
+    <line x1="80" y1="120" x2="1120" y2="120"/>
+    <line x1="80" y1="500" x2="1120" y2="500"/>
+  </g>
+</svg>

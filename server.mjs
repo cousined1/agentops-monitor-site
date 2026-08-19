@@ -13,9 +13,50 @@ const contentTypes = new Map([
   [".json", "application/json; charset=utf-8"],
   [".md", "text/markdown; charset=utf-8"],
   [".png", "image/png"],
+  [".svg", "image/svg+xml"],
+  [".txt", "text/plain; charset=utf-8"],
+  [".xml", "application/xml; charset=utf-8"],
 ]);
 
+const contentSecurityPolicy = [
+  "default-src 'self'",
+  "img-src 'self' data:",
+  "style-src 'self' 'unsafe-inline'",
+  "script-src 'self' 'unsafe-inline'",
+  "font-src 'self'",
+  "object-src 'none'",
+  "base-uri 'self'",
+  "frame-ancestors 'none'",
+  "form-action 'self'",
+].join("; ");
+
+function applySecurityHeaders(request, response) {
+  const forwardedProto = (request.headers["x-forwarded-proto"] ?? "")
+    .toString()
+    .split(",")[0]
+    .trim()
+    .toLowerCase();
+  const isHttps = forwardedProto === "https" || request.socket?.encrypted === true;
+  if (isHttps) {
+    response.setHeader(
+      "Strict-Transport-Security",
+      "max-age=31536000; includeSubDomains",
+    );
+  }
+  response.setHeader("X-Content-Type-Options", "nosniff");
+  response.setHeader("X-Frame-Options", "DENY");
+  response.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
+  response.setHeader(
+    "Permissions-Policy",
+    "camera=(), microphone=(), interest-cohort=()",
+  );
+  response.setHeader("Content-Security-Policy", contentSecurityPolicy);
+  response.setHeader("Cross-Origin-Opener-Policy", "same-origin");
+}
+
 const server = createServer(async (request, response) => {
+  applySecurityHeaders(request, response);
+
   const url = new URL(request.url ?? "/", "http://localhost");
 
   if (url.pathname === "/api/health") {
@@ -36,7 +77,10 @@ const server = createServer(async (request, response) => {
     return;
   }
 
-  const relativePath = pathname === "/" ? "index.html" : pathname.slice(1);
+  let relativePath = pathname === "/" ? "index.html" : pathname.slice(1);
+  if (relativePath === "privacy") {
+    relativePath = "privacy.html";
+  }
   const filePath = resolve(root, relativePath);
   if (filePath !== root && !filePath.startsWith(`${root}${sep}`)) {
     response.writeHead(403);
@@ -49,9 +93,10 @@ const server = createServer(async (request, response) => {
     if (!fileStat.isFile()) {
       throw new Error("Not a file");
     }
+    const ext = extname(filePath);
     response.writeHead(200, {
-      "content-type": contentTypes.get(extname(filePath)) ?? "application/octet-stream",
-      "cache-control": extname(filePath) === ".html" ? "no-cache" : "public, max-age=3600",
+      "content-type": contentTypes.get(ext) ?? "application/octet-stream",
+      "cache-control": ext === ".html" ? "no-cache" : "public, max-age=3600",
     });
     createReadStream(filePath).pipe(response);
   } catch {
