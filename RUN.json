@@ -1,0 +1,30 @@
+{
+  "product": "AgentOps Monitor",
+  "status": "local_build_complete",
+  "archetype": "saas",
+  "captureDate": "2026-08-18",
+  "currentDirection": "A2 Tufte data-ink",
+  "validators": {
+    "validate_site": "pass",
+    "validate_saas": "pass"
+  },
+  "visual": {
+    "status": "pass",
+    "winner": "v1",
+    "score": 88,
+    "desktop": "1440x900, no horizontal overflow",
+    "mobile": "393x852, no horizontal overflow",
+    "consoleErrors": 0,
+    "failedRequests": 0,
+    "judgeMode": "direct screenshot fallback; dedicated judge provider quota exhausted"
+  },
+  "deployment": {
+    "github": "pending naming decision",
+    "railway": "blocked by Railway platform incident"
+  },
+  "risks": [
+    "AgentOps.ai naming and category collision",
+    "framework compatibility is planned but unverified",
+    "pricing is owner-supplied pre-launch intent"
+  ]
+}

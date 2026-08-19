@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>AgentOps Monitor · Observability for AI Agents in Production</title>
+  <meta name="description" content="Trace every tool call, govern spend, audit every decision. Pre-launch B2B observability for AI agents.">
+  <meta property="og:title" content="AgentOps Monitor - Observability for AI Agents">
+  <meta name="theme-color" content="#0e1116">
+  <meta property="og:description" content="Trace every tool call. Govern every dollar. Audit every decision.">
+  <meta property="og:type" content="website">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' fill='%230e1116'/%3E%3Cpath d='M3 4h10M3 8h10M3 12h10' stroke='%2356d364' stroke-width='1.5'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    :focus-visible { outline: 2px solid #56d364; outline-offset: 2px; }
+    :focus { outline-color: #56d364; }
+  </style>
+</head>
+<body>
+  <a class="skip" href="#main">Skip to content</a>
+
+  <header class="topbar">
+    <div class="topbar-inner">
+      <a class="brand" href="#main">
+        <span class="brand-mark" aria-hidden="true">▌▐</span>
+        <span class="brand-name">AgentOps Monitor</span>
+        <span class="brand-meta" aria-hidden="true">v0.7 · pre-launch</span>
+      </a>
+      <nav class="nav" aria-label="Primary">
+        <a href="#trace">Trace</a>
+        <a href="#cost">Cost</a>
+        <a href="#install">Install</a>
+        <a href="#integrations">Integrations</a>
+        <a href="#pricing">Pricing</a>
+      </nav>
+      <a class="cta cta-primary" href="#install">Install the SDK</a>
+    </div>
+  </header>
+
+  <main id="main">
+
+    <section class="hero" aria-labelledby="hero-h">
+      <div class="hero-grid">
+        <div class="hero-text">
+          <p class="eyebrow">02:14:11Z · run r_9f2c1a4e · agent refund-triage-v3</p>
+          <h1 id="hero-h">Find the call that cost you four hundred dollars.</h1>
+          <p class="lede">AgentOps Monitor replays every tool call, every LLM decision, every dollar an agent spends, so an on-call engineer at 2 a.m. can stop guessing and start fixing.</p>
+          <p class="hero-actions">
+            <a class="cta cta-primary" href="#install">Install the SDK</a>
+            <a class="cta cta-ghost" href="#trace">Install to replay</a>
+          </p>
+          <p class="hero-meta">Three lines. The planned SDK adapters target LangChain, CrewAI, and the OpenAI SDK. Concept surfaces shown below are built from the proposed data model.</p>
+        </div>
+
+        <figure class="hero-figure surface" data-surface="hero-trace" data-fidelity="concept" aria-label="Concept trace replay of a refund triage agent" data-source="product-facts.md:trace-data-shape">
+          <figcaption class="figure-tag">Concept · concept surface, real data shape</figcaption>
+          <div class="surface-head">
+            <span>trace</span>
+            <span>r_9f2c1a4e</span>
+            <span class="status-warn">budget exceeded</span>
+          </div>
+          <div class="trace-meta">
+            <span>started 2026-08-14 02:14:11Z</span>
+            <span>duration 48,219 ms</span>
+            <span>spans 412</span>
+            <span>cost $18.44</span>
+            <span>tokens 412,880 / 88,104</span>
+          </div>
+          <ol class="trace-spans" aria-label="Trace spans">
+            <li class="span"><span class="time">+0 ms</span><span class="agent">refund-triage-v3</span><span class="tool">start</span></li>
+            <li class="span"><span class="time">+12 ms</span><span class="agent">llm</span><span class="tool">openai.chat · 8,204 tok</span></li>
+            <li class="span"><span class="time">+612 ms</span><span class="agent">tool</span><span class="tool">vectorstore.query</span></li>
+            <li class="span"><span class="time">+820 ms</span><span class="agent">tool</span><span class="tool">stripe.refunds.create · HELD</span></li>
+            <li class="span span-loop"><span class="time">+5,402 ms</span><span class="agent">tool</span><span class="tool">retries × 3</span></li>
+            <li class="span span-hot"><span class="time">+11,008 ms</span><span class="agent">llm</span><span class="tool">openai.chat · 64,118 tok</span></li>
+            <li class="span"><span class="time">+18,402 ms</span><span class="agent">tool</span><span class="tool">slack.postMessage</span></li>
+            <li class="span span-fail"><span class="time">+48,219 ms</span><span class="agent">end</span><span class="tool">budget exceeded</span></li>
+          </ol>
+          <p class="figure-caption">Refund triage, three retries, one held refund.</p>
+        </figure>
+      </div>
+    </section>
+
+    <section class="thesis" aria-labelledby="thesis-h">
+      <h2 id="thesis-h">Thesis</h2>
+      <p>An agent without a budget is an incident waiting to be invoiced. Three minutes of looping, and the on-call sees the bill before they see the fix.</p>
+    </section>
+
+    <section class="pains" aria-labelledby="pains-h">
+      <h2 id="pains-h">Four pains, in the buyer's words</h2>
+      <ul class="pain-list">
+        <li><span class="pain-num">01</span><p>You cannot see what it did. Did it hallucinate, call the wrong API, retry forever?</p></li>
+        <li><span class="pain-num">02</span><p>You cannot explain a decision. Why was that refund rejected, that lead routed there?</p></li>
+        <li><span class="pain-num">03</span><p>Costs spiral without a ceiling. One looping agent, one very large bill.</p></li>
+        <li><span class="pain-num">04</span><p>Compliance blocks the deploy. No audit trail, no approval, no launch.</p></li>
+      </ul>
+    </section>
+
+    <section class="surface-section" id="trace" data-surface="trace-section" data-fidelity="concept" aria-labelledby="trace-h">
+      <div class="section-head">
+        <h2 id="trace-h">Trace replay, step by step</h2>
+        <p>Every tool call, every LLM decision, with the exact tokens and wall time. Click a span, see its prompt, the model output, and what it changed in the world.</p>
+      </div>
+
+      <div class="surface-row">
+        <figure class="surface" data-surface="trace-detail" data-fidelity="concept" aria-label="Concept trace span detail">
+          <figcaption class="figure-tag">Concept · concept surface, real data shape</figcaption>
+          <div class="surface-head">
+            <span>span s_011d · openai.chat</span>
+            <span>+11,008 ms</span>
+          </div>
+          <p class="kv"><span>model</span><code>gpt-5-mini</code></p>
+          <p class="kv"><span>tokens in</span><code>54,118</code></p>
+          <p class="kv"><span>tokens out</span><code>10,000</code></p>
+          <p class="kv"><span>cost</span><code class="num">$8.71</code></p>
+          <p class="kv"><span>retry</span><code>0 of 3</code></p>
+          <pre class="block"><code>system: You are a refund triage agent for order #A-9123...
+user: refund requested, reason: damaged on arrival
+tool: vectorstore.query → 4 matches
+assistant: Recommend HOLD pending review.
+tool: stripe.refunds.create → status: held
+tool: slack.postMessage → channel: #refunds</code></pre>
+          <p class="figure-caption">Span detail, prompt and tool calls.</p>
+        </figure>
+
+        <figure class="surface" data-surface="trace-graph" data-fidelity="concept" aria-label="Concept trace timeline with a hot span">
+          <figcaption class="figure-tag">Concept · concept surface, real data shape</figcaption>
+          <div class="surface-head">
+            <span>timeline · 412 spans</span>
+            <span class="status-warn">1 hot, 1 loop</span>
+          </div>
+          <div class="timeline">
+            <div class="bar" style="left:0%;width:1.4%"></div>
+            <div class="bar" style="left:1.4%;width:1.2%"></div>
+            <div class="bar" style="left:2.6%;width:1.6%"></div>
+            <div class="bar bar-hot" style="left:10.4%;width:6.2%" title="hot span 11,008 ms"></div>
+            <div class="bar" style="left:18.4%;width:1.2%"></div>
+            <div class="bar" style="left:20.0%;width:2.4%"></div>
+            <div class="bar" style="left:24.0%;width:1.0%"></div>
+            <div class="bar bar-loop" style="left:26.4%;width:3.6%" title="retries × 3"></div>
+            <div class="bar" style="left:32.0%;width:1.4%"></div>
+            <div class="bar" style="left:36.0%;width:1.0%"></div>
+            <div class="bar" style="left:44.0%;width:1.4%"></div>
+            <div class="bar" style="left:54.0%;width:1.0%"></div>
+            <div class="bar" style="left:68.0%;width:2.0%"></div>
+            <div class="bar" style="left:74.0%;width:6.0%"></div>
+          </div>
+          <div class="timeline-axis"><span>0</span><span>10s</span><span>20s</span><span>30s</span><span>40s</span><span>48s</span></div>
+          <p class="figure-caption">Run timeline. One span runs hotter than the rest.</p>
+        </figure>
+      </div>
+    </section>
+
+    <section class="surface-section" id="cost" data-surface="cost-section" data-fidelity="concept" aria-labelledby="cost-h">
+      <div class="section-head">
+        <h2 id="cost-h">Spend you can defend in a budget meeting</h2>
+        <p>Hard caps at the workflow, the agent, and the user. A run stops at the limit you set, not at the limit your CFO finds out about.</p>
+      </div>
+
+      <div class="surface-row">
+        <figure class="surface" data-surface="cost-board" data-fidelity="concept" aria-label="Concept cost governance dashboard">
+          <figcaption class="figure-tag">Concept · concept surface, real data shape</figcaption>
+          <div class="surface-head">
+            <span>cost · this week</span>
+            <span class="status-ok">under budget</span>
+          </div>
+          <table class="ledger">
+            <thead><tr><th>agent</th><th>runs</th><th class="num">cost</th><th class="num">cap</th><th>status</th></tr></thead>
+            <tbody>
+              <tr><td>refund-triage-v3</td><td>12,402</td><td class="num">$182.04</td><td class="num">$300</td><td>ok</td></tr>
+              <tr><td>support-routing-v1</td><td>8,114</td><td class="num">$64.21</td><td class="num">$200</td><td>ok</td></tr>
+              <tr><td>lead-research-v2</td><td>3,118</td><td class="num">$48.12</td><td class="num">$120</td><td>ok</td></tr>
+              <tr><td>doc-summarise-v1</td><td>22,408</td><td class="num">$412.18</td><td class="num">$500</td><td class="status-warn">82%</td></tr>
+              <tr><td>qa-test-gen-v0</td><td>4,802</td><td class="num">$112.40</td><td class="num">$200</td><td>ok</td></tr>
+            </tbody>
+          </table>
+          <p class="figure-caption">Cost per agent, hard cap, current status.</p>
+        </figure>
+
+        <figure class="surface" data-surface="cost-policy" data-fidelity="concept" aria-label="Concept policy guardrail config">
+          <figcaption class="figure-tag">Concept · concept surface, real data shape</figcaption>
+          <div class="surface-head">
+            <span>policy · guardrails</span>
+            <span>require_approval</span>
+          </div>
+          <pre class="block"><code>policy:
+  refund:
+    cap_per_run_usd: 50
+    require_approval_above: 250
+    approver_role: finance-lead
+  tool:
+    stripe.refunds.create:
+      hold_above_usd: 100
+    slack.postMessage:
+      block_channel: ["#exec-private"]
+  loop:
+    max_retries: 3
+    halt_after_seconds: 60</code></pre>
+          <p class="figure-caption">Policies ship in the SDK, run in our edge.</p>
+        </figure>
+      </div>
+    </section>
+
+    <section class="surface-section" id="install" data-surface="install-section" data-fidelity="concept" aria-labelledby="install-h">
+      <div class="section-head">
+        <h2 id="install-h">Install the SDK</h2>
+        <p>Three lines. The pre-launch SDK is designed for LangChain, CrewAI, and the OpenAI SDK. Compatibility remains unverified until the package ships.</p>
+      </div>
+
+      <div class="install-row">
+        <pre class="install"><code>from agentops_monitor import monitor
+monitor.init(api_key="aom_...", budget_usd=50)
+# planned adapters: LangChain, CrewAI, OpenAI SDK</code></pre>
+        <a class="cta cta-primary" href="#install">Install the SDK</a>
+      </div>
+
+      <p class="install-meta">Pre-launch interface. Package name and adapter compatibility are provisional.</p>
+    </section>
+
+    <section class="integrations" id="integrations" aria-labelledby="int-h">
+      <div class="section-head">
+        <h2 id="int-h">Integrations</h2>
+        <p>The names below are planned adapters, not shipping integrations or partnerships.</p>
+      </div>
+      <ul class="integration-list">
+        <li><span class="int-name">LangChain</span><span class="int-status">planned</span></li>
+        <li><span class="int-name">CrewAI</span><span class="int-status">planned</span></li>
+        <li><span class="int-name">OpenAI SDK</span><span class="int-status">planned</span></li>
+        <li><span class="int-name">Anthropic SDK</span><span class="int-status">planned</span></li>
+        <li><span class="int-name">Stripe</span><span class="int-status">planned</span></li>
+        <li><span class="int-name">Slack</span><span class="int-status">planned</span></li>
+      </ul>
+    </section>
+
+    <section class="pricing" id="pricing" aria-labelledby="price-h">
+      <div class="section-head">
+        <h2 id="price-h">Pricing</h2>
+        <p>Planned launch pricing for free, team, enterprise, and metered overage.</p>
+      </div>
+      <div class="plan-row">
+        <article class="plan" data-plan="free" data-price="0" data-price-qualifier="">
+          <h3>Free</h3>
+          <p class="price"><span class="amount">$0</span><span class="period">a month</span></p>
+          <ul>
+            <li>10,000 agent runs a month</li>
+            <li>Basic tracing</li>
+            <li>Community support</li>
+          </ul>
+          <p class="cta cta-ghost">Install the SDK</p>
+        </article>
+        <article class="plan" data-plan="team" data-price="299" data-price-qualifier="">
+          <h3>Team</h3>
+          <p class="price"><span class="amount">$299</span><span class="period">a month</span></p>
+          <ul>
+            <li>500,000 runs</li>
+            <li>Cost governance, alerts</li>
+            <li>Slack support</li>
+          </ul>
+          <p class="cta cta-ghost">Install the SDK</p>
+        </article>
+        <article class="plan" data-plan="enterprise" data-price="2000" data-price-qualifier="from">
+          <h3>Enterprise</h3>
+          <p class="price"><span class="amount">From $2,000</span><span class="period">a month</span></p>
+          <ul>
+            <li>Custom run limits</li>
+            <li>SSO, audit export, custom policies</li>
+            <li>Named support</li>
+          </ul>
+          <p class="cta cta-ghost">Install the SDK</p>
+        </article>
+        <article class="plan" data-plan="overage" data-price="metered" data-price-qualifier="per-1000-runs">
+          <h3>Overage</h3>
+          <p class="price"><span class="amount">Metered</span><span class="period">per 1,000 runs</span></p>
+          <ul>
+            <li>Billed monthly on actual usage</li>
+            <li>Soft cap before hard cap</li>
+            <li>Same SLA as the plan it sits on</li>
+          </ul>
+          <p class="cta cta-ghost">Install the SDK</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="audit" aria-labelledby="audit-h">
+      <div class="section-head">
+        <h2 id="audit-h">What an audit reader actually gets</h2>
+        <p>The audit trail will hold every prompt, model output, tool call, and human approval, retained according to configured policy. SOC 2, HIPAA, GDPR, and ISO badges are not claimed on this page. The audit trail is the product.</p>
+      </div>
+      <table class="ledger audit-table">
+        <thead><tr><th>event</th><th>recorded</th><th>retained</th></tr></thead>
+        <tbody>
+          <tr><td>prompt</td><td>hash + length</td><td>policy window</td></tr>
+          <tr><td>model output</td><td>hash + length</td><td>policy window</td></tr>
+          <tr><td>tool call</td><td>args, response, latency</td><td>policy window</td></tr>
+          <tr><td>human approval</td><td>approver, role, time</td><td>policy window</td></tr>
+          <tr><td>policy block</td><td>rule, value, decision</td><td>policy window</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section class="close" aria-labelledby="close-h">
+      <h2 id="close-h">You cannot ship agents you cannot see.</h2>
+      <p>The bill is the first thing that tells you.</p>
+      <p><a class="cta cta-primary" href="#install">Install the SDK</a></p>
+    </section>
+
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+      <p>AgentOps Monitor · pre-launch · concepts shown are concept renderings built from the shipping data model.</p>
+      <p class="footer-meta"><a href="#main">top</a></p>
+    </div>
+  </footer>
+</body>
+</html>

@@ -1,0 +1,6 @@
+node_modules/
+stdout.log
+stderr.log
+.railway/
+shots/
+variants/*/screenshot.png/
