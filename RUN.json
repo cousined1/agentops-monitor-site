@@ -19,8 +19,18 @@
     "judgeMode": "direct screenshot fallback; dedicated judge provider quota exhausted"
   },
   "deployment": {
-    "github": "pending naming decision",
-    "railway": "blocked by Railway platform incident"
+    "github": {
+      "status": "private",
+      "url": "https://github.com/cousined1/agentops-monitor-site"
+    },
+    "railway": {
+      "status": "live",
+      "url": "https://agentops-monitor-site-production.up.railway.app",
+      "deploymentId": "ebbce37b-45db-4e14-a268-dbc05ac3c953",
+      "region": "us-west2",
+      "health": "ok",
+      "sha": "pending safe restart; GIT_SHA configured with deploy skipped during incident"
+    }
   },
   "risks": [
     "AgentOps.ai naming and category collision",

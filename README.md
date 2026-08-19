@@ -10,6 +10,10 @@ npm start
 
 Open `http://localhost:3000`. Health metadata is available at `http://localhost:3000/api/health`.
 
+Private source: https://github.com/cousined1/agentops-monitor-site
+
+Live preview: https://agentops-monitor-site-production.up.railway.app
+
 ## Evidence
 
 - `product-facts.md` records verified, owner-supplied, cut, and unverified claims.
