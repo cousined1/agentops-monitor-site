@@ -66,7 +66,7 @@
   <header class="topbar">
     <div class="topbar-inner">
       <a class="brand" href="#main">
-        <span class="brand-mark" aria-hidden="true">â–Œâ–</span>
+        <span class="brand-mark" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><rect x="1.5" y="1.5" width="21" height="21" rx="5" stroke="currentColor" stroke-width="2"/><path d="M5 14.5h3l2-6.5 3 9 2.2-5.5H19" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
         <span class="brand-name">AgentOps Monitor</span>
         <span class="brand-meta" aria-hidden="true">v0.7 · pre-launch</span>
       </a>
@@ -115,7 +115,7 @@
             <li class="span"><span class="time">+12 ms</span><span class="agent">llm</span><span class="tool">openai.chat · 8,204 tok</span></li>
             <li class="span"><span class="time">+612 ms</span><span class="agent">tool</span><span class="tool">vectorstore.query</span></li>
             <li class="span"><span class="time">+820 ms</span><span class="agent">tool</span><span class="tool">stripe.refunds.create · HELD</span></li>
-            <li class="span span-loop"><span class="time">+5,402 ms</span><span class="agent">tool</span><span class="tool">retries Ã— 3</span></li>
+            <li class="span span-loop"><span class="time">+5,402 ms</span><span class="agent">tool</span><span class="tool">retries × 3</span></li>
             <li class="span span-hot"><span class="time">+11,008 ms</span><span class="agent">llm</span><span class="tool">openai.chat · 64,118 tok</span></li>
             <li class="span"><span class="time">+18,402 ms</span><span class="agent">tool</span><span class="tool">slack.postMessage</span></li>
             <li class="span span-fail"><span class="time">+48,219 ms</span><span class="agent">end</span><span class="tool">budget exceeded</span></li>
@@ -181,7 +181,7 @@ tool: slack.postMessage â†’ channel: #refunds</code></pre>
             <div class="bar" style="left:18.4%;width:1.2%"></div>
             <div class="bar" style="left:20.0%;width:2.4%"></div>
             <div class="bar" style="left:24.0%;width:1.0%"></div>
-            <div class="bar bar-loop" style="left:26.4%;width:3.6%" title="retries Ã— 3"></div>
+            <div class="bar bar-loop" style="left:26.4%;width:3.6%" title="retries × 3"></div>
             <div class="bar" style="left:32.0%;width:1.4%"></div>
             <div class="bar" style="left:36.0%;width:1.0%"></div>
             <div class="bar" style="left:44.0%;width:1.4%"></div>
@@ -357,6 +357,6 @@ monitor.init(api_key="aom_...", budget_usd=50)
       <p class="footer-meta"><a href="/privacy">Privacy</a> · <a href="/cookie-policy">Cookie Policy</a> · <button class="footer-control" type="button" data-cookie-preferences>Cookie Preferences</button> · <a href="#main">top</a></p>
     </div>
   </footer>
-  <script src="/aom-chatbot.js" async></script>
+  <script src="/aom-chatbot.js?v=3" async></script>
 </body>
 </html>

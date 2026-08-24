@@ -579,13 +579,16 @@
     } catch (e) {}
   }
   function loadState() {
-    try {
-      const saved = JSON.parse(localStorage.getItem(CONFIG.storageKey));
-      if (saved) { state.isOpen = saved.isOpen || false; state.messages = []; if (state.isOpen && CONFIG.persistOpen) openChat(); }
-    } catch (e) {}
+    // Never restore a stale "open" flag: it suppresses auto-open and makes the
+    // first button click a no-op close(). The widget always starts closed.
+    state.isOpen = false;
+    state.messages = [];
   }
 
+  let initialized = false;
   function init() {
+    if (initialized) return;
+    initialized = true;
     createWidget();
     if (CONFIG.showOnLoad && !state.isOpen) setTimeout(() => { if (!state.isOpen) openChat(); }, CONFIG.delayBeforeOpen);
   }

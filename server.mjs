@@ -94,9 +94,13 @@ const server = createServer(async (request, response) => {
       throw new Error("Not a file");
     }
     const ext = extname(filePath);
+    const cacheControl =
+      ext === ".html" || ext === ".js"
+        ? "no-cache"
+        : "public, max-age=3600";
     response.writeHead(200, {
       "content-type": contentTypes.get(ext) ?? "application/octet-stream",
-      "cache-control": ext === ".html" ? "no-cache" : "public, max-age=3600",
+      "cache-control": cacheControl,
     });
     createReadStream(filePath).pipe(response);
   } catch {
