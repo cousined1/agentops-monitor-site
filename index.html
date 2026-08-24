@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>AgentOps Monitor Â· Observability for AI Agents in Production</title>
+  <title>AgentOps Monitor · Observability for AI Agents in Production</title>
   <meta name="description" content="Trace every tool call, govern spend, audit every decision. Pre-launch B2B observability for AI agents.">
   <meta name="robots" content="index, follow">
   <meta name="googlebot" content="index, follow">
@@ -18,7 +18,7 @@
   <meta property="og:image:height" content="630">
   <meta property="og:image:alt" content="AgentOps Monitor logo and tagline">
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="AgentOps Monitor Â· Observability for AI Agents">
+  <meta name="twitter:title" content="AgentOps Monitor · Observability for AI Agents">
   <meta name="twitter:description" content="Trace every tool call. Govern every dollar. Audit every decision.">
   <meta name="twitter:image" content="https://agentopsmonitor.com/og-image.svg">
   <link rel="canonical" href="https://agentopsmonitor.com/">
@@ -68,7 +68,7 @@
       <a class="brand" href="#main">
         <span class="brand-mark" aria-hidden="true">â–Œâ–</span>
         <span class="brand-name">AgentOps Monitor</span>
-        <span class="brand-meta" aria-hidden="true">v0.7 Â· pre-launch</span>
+        <span class="brand-meta" aria-hidden="true">v0.7 · pre-launch</span>
       </a>
       <nav class="nav" aria-label="Primary">
         <a href="#trace">Trace</a>
@@ -86,7 +86,7 @@
     <section class="hero" aria-labelledby="hero-h">
       <div class="hero-grid">
         <div class="hero-text">
-          <p class="eyebrow">02:14:11Z Â· run r_9f2c1a4e Â· agent refund-triage-v3</p>
+          <p class="eyebrow">02:14:11Z · run r_9f2c1a4e · agent refund-triage-v3</p>
           <h1 id="hero-h">Find the call that cost you four hundred dollars.</h1>
           <p class="lede">AgentOps Monitor replays every tool call, every LLM decision, every dollar an agent spends, so an on-call engineer at 2 a.m. can stop guessing and start fixing.</p>
           <p class="hero-actions">
@@ -97,7 +97,7 @@
         </div>
 
         <figure class="hero-figure surface" data-surface="hero-trace" data-fidelity="concept" aria-label="Concept trace replay of a refund triage agent" data-source="product-facts.md:trace-data-shape">
-          <figcaption class="figure-tag">Concept Â· concept surface, real data shape</figcaption>
+          <figcaption class="figure-tag">Concept · concept surface, real data shape</figcaption>
           <div class="surface-head">
             <span>trace</span>
             <span>r_9f2c1a4e</span>
@@ -112,11 +112,11 @@
           </div>
           <ol class="trace-spans" aria-label="Trace spans">
             <li class="span"><span class="time">+0 ms</span><span class="agent">refund-triage-v3</span><span class="tool">start</span></li>
-            <li class="span"><span class="time">+12 ms</span><span class="agent">llm</span><span class="tool">openai.chat Â· 8,204 tok</span></li>
+            <li class="span"><span class="time">+12 ms</span><span class="agent">llm</span><span class="tool">openai.chat · 8,204 tok</span></li>
             <li class="span"><span class="time">+612 ms</span><span class="agent">tool</span><span class="tool">vectorstore.query</span></li>
-            <li class="span"><span class="time">+820 ms</span><span class="agent">tool</span><span class="tool">stripe.refunds.create Â· HELD</span></li>
+            <li class="span"><span class="time">+820 ms</span><span class="agent">tool</span><span class="tool">stripe.refunds.create · HELD</span></li>
             <li class="span span-loop"><span class="time">+5,402 ms</span><span class="agent">tool</span><span class="tool">retries Ã— 3</span></li>
-            <li class="span span-hot"><span class="time">+11,008 ms</span><span class="agent">llm</span><span class="tool">openai.chat Â· 64,118 tok</span></li>
+            <li class="span span-hot"><span class="time">+11,008 ms</span><span class="agent">llm</span><span class="tool">openai.chat · 64,118 tok</span></li>
             <li class="span"><span class="time">+18,402 ms</span><span class="agent">tool</span><span class="tool">slack.postMessage</span></li>
             <li class="span span-fail"><span class="time">+48,219 ms</span><span class="agent">end</span><span class="tool">budget exceeded</span></li>
           </ol>
@@ -148,9 +148,9 @@
 
       <div class="surface-row">
         <figure class="surface" data-surface="trace-detail" data-fidelity="concept" aria-label="Concept trace span detail">
-          <figcaption class="figure-tag">Concept Â· concept surface, real data shape</figcaption>
+          <figcaption class="figure-tag">Concept · concept surface, real data shape</figcaption>
           <div class="surface-head">
-            <span>span s_011d Â· openai.chat</span>
+            <span>span s_011d · openai.chat</span>
             <span>+11,008 ms</span>
           </div>
           <p class="kv"><span>model</span><code>gpt-5-mini</code></p>
@@ -168,9 +168,9 @@ tool: slack.postMessage â†’ channel: #refunds</code></pre>
         </figure>
 
         <figure class="surface" data-surface="trace-graph" data-fidelity="concept" aria-label="Concept trace timeline with a hot span">
-          <figcaption class="figure-tag">Concept Â· concept surface, real data shape</figcaption>
+          <figcaption class="figure-tag">Concept · concept surface, real data shape</figcaption>
           <div class="surface-head">
-            <span>timeline Â· 412 spans</span>
+            <span>timeline · 412 spans</span>
             <span class="status-warn">1 hot, 1 loop</span>
           </div>
           <div class="timeline">
@@ -203,9 +203,9 @@ tool: slack.postMessage â†’ channel: #refunds</code></pre>
 
       <div class="surface-row">
         <figure class="surface" data-surface="cost-board" data-fidelity="concept" aria-label="Concept cost governance dashboard">
-          <figcaption class="figure-tag">Concept Â· concept surface, real data shape</figcaption>
+          <figcaption class="figure-tag">Concept · concept surface, real data shape</figcaption>
           <div class="surface-head">
-            <span>cost Â· this week</span>
+            <span>cost · this week</span>
             <span class="status-ok">under budget</span>
           </div>
           <table class="ledger">
@@ -222,9 +222,9 @@ tool: slack.postMessage â†’ channel: #refunds</code></pre>
         </figure>
 
         <figure class="surface" data-surface="cost-policy" data-fidelity="concept" aria-label="Concept policy guardrail config">
-          <figcaption class="figure-tag">Concept Â· concept surface, real data shape</figcaption>
+          <figcaption class="figure-tag">Concept · concept surface, real data shape</figcaption>
           <div class="surface-head">
-            <span>policy Â· guardrails</span>
+            <span>policy · guardrails</span>
             <span>require_approval</span>
           </div>
           <pre class="block"><code>policy:
@@ -352,8 +352,9 @@ monitor.init(api_key="aom_...", budget_usd=50)
 
   <footer class="footer">
     <div class="footer-inner">
-      <p>AgentOps Monitor Â· pre-launch Â· concepts shown are concept renderings built from the shipping data model.</p>
-      <p class="footer-meta"><a href="/privacy">Privacy</a> Â· <a href="/cookie-policy">Cookie Policy</a> Â· <button class="footer-control" type="button" data-cookie-preferences>Cookie Preferences</button> Â· <a href="#main">top</a></p>
+      <p>AgentOps Monitor · pre-launch · concepts shown are concept renderings built from the shipping data model.</p>
+      <p>Questions? <a href="mailto:support@agentopsmonitor.com">support@agentopsmonitor.com</a></p>
+      <p class="footer-meta"><a href="/privacy">Privacy</a> · <a href="/cookie-policy">Cookie Policy</a> · <button class="footer-control" type="button" data-cookie-preferences>Cookie Preferences</button> · <a href="#main">top</a></p>
     </div>
   </footer>
   <script src="/aom-chatbot.js" async></script>

@@ -191,6 +191,7 @@
       message:
         '📞 **Talk to AgentOps Monitor sales.**\n\n' +
         'Leave your work email and we\u2019ll reach out — I can collect it right here.\n\n' +
+        'Prefer email? Write to us at [support@agentopsmonitor.com](mailto:support@agentopsmonitor.com).\n\n' +
         'If you\u2019re an **Enterprise / regulated-industry** prospect, we\u2019ll set up a discovery call rather than self-serve.',
       quickReplies: [{ text: 'Leave my email', next: 'capture_lead' }],
       captureLead: true,
@@ -200,12 +201,21 @@
         '✅ **Lead capture.**\n\n' +
         'Please share your **work email** (and company, optional). Our team will follow up within 24 hours.',
       quickReplies: [{ text: 'Just browsing', next: 'browse' }],
+      captureLead: true,
     },
+    lead_company: {
+      message:
+        '📧 Got it — **{{email}}**.\n\n' +
+        'What\u2019s your company name? (Optional \u2014 type *skip* if you\u2019d rather not say.)',
+      quickReplies: [{ text: 'Skip', next: 'lead_confirm' }],
+      captureLead: true,
+    },
+    lead_confirm: { message: '', captureLead: false },
     browse: {
       message:
         '👍 No problem — explore AgentOps Monitor.\n\n' +
         '• 🏠 [Homepage](https://agentopsmonitor.com)\n' +
-        '• 🛠️ Install the SDK\n\n' +
+        '• 🛠️ [Install the SDK](https://agentopsmonitor.com/#install)\n\n' +
         'I\u2019ll be here if you have questions. Just reopen the chat!',
       quickReplies: [
         { text: 'What is AgentOps Monitor?', next: 'about' },
@@ -230,31 +240,31 @@
 
   // Keyword detection for free-form messages
   const KEYWORDS = {
+    hello: ['hello', 'hi', 'hey', 'greetings', 'howdy'],
+    install: [
+      'install', 'sdk', 'integrate', 'langchain', 'crewai', 'openai', 'setup',
+      'code', 'pip',
+    ],
+    audit: ['audit', 'compliance', 'soc2', 'soc 2', 'hipaa', 'gdpr', 'iso', 'trail'],
     price: [
       'price', 'cost', 'how much', 'pricing', 'plan', 'subscription', 'pay',
-      'expensive', 'cheap', 'free', 'team', 'enterprise', 'overage',
+      'expensive', 'cheap', 'free tier', 'team plan', 'enterprise', 'overage',
+    ],
+    contact: [
+      'contact', 'sales', 'speak', 'talk to', 'human', 'representative',
+      'call me', 'email me', 'reach you', 'book a demo',
+    ],
+    budgets: [
+      'budget', 'cap', 'limit', 'spend', 'ceiling', 'guardrail',
+      'policy', 'retry', 'approval',
     ],
     demo: [
       'demo', 'show me', 'see it', 'walkthrough', 'trace', 'replay', 'example',
     ],
     about: [
       'about', 'what is', 'how does', 'features', 'what can', 'product',
-      'monitor', 'observability', 'do', 'track',
+      'monitor', 'observability', 'track',
     ],
-    budgets: [
-      'budget', 'cap', 'limit', 'spend', 'cost', 'ceiling', 'guardrail',
-      'policy', 'retry', 'approval',
-    ],
-    install: [
-      'install', 'sdk', 'integrate', 'langchain', 'crewai', 'openai', 'setup',
-      'code', 'pip',
-    ],
-    audit: ['audit', 'compliance', 'soc2', 'hipaa', 'gdpr', 'iso', 'trail'],
-    contact: [
-      'contact', 'sales', 'speak', 'talk', 'human', 'representative', 'call',
-      'email', 'reach', 'demo',
-    ],
-    hello: ['hello', 'hi', 'hey', 'greetings', 'howdy'],
   };
 
   function detectIntent(message) {
@@ -413,13 +423,15 @@
   function toggleChat() { state.isOpen ? closeChat() : openChat(); }
   function openChat() {
     widget.classList.add('open'); state.isOpen = true; saveState();
-    if (state.messages.length === 0) showBotMessage('welcome');
+    if (!messagesContainer.querySelector('.aom-chatbot-message')) showBotMessage('welcome');
   }
   function closeChat() { widget.classList.remove('open'); state.isOpen = false; saveState(); }
 
   function showBotMessage(flowKey) {
+    if (flowKey === 'lead_confirm') { state.awaitingInput = false; showLeadConfirmation(); return; }
     const flow = SALES_FLOWS[flowKey] || SALES_FLOWS.fallback;
     state.currentFlow = flowKey;
+    const bodyText = (flow.message || flow.intro || '').replace(/\{\{email\}\}/g, state.leadData.email || 'your email');
     showTyping();
     setTimeout(() => {
       hideTyping();
@@ -428,7 +440,7 @@
       messageDiv.innerHTML =
         '<div class="aom-chatbot-message-avatar">' + CONFIG.botAvatar + '</div>' +
         '<div>' +
-        '<div class="aom-chatbot-message-content">' + formatMessage(flow.message || flow.intro || '') + '</div>' +
+        '<div class="aom-chatbot-message-content">' + formatMessage(bodyText) + '</div>' +
         (flow.quickReplies
           ? '<div class="aom-chatbot-quick-replies">' +
             flow.quickReplies.map((r) => '<button class="aom-chatbot-quick-reply" data-next="' + r.next + '">' + r.text + '</button>').join('') +
@@ -473,16 +485,22 @@
   }
 
   function handleLeadCapture(text) {
-    const emailMatch = text.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/);
-    if (emailMatch && !state.leadData.email) state.leadData.email = emailMatch[0];
+    const trimmed = (text || '').trim();
+    const emailMatch = trimmed.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/);
     if (!state.leadData.email) {
-      showBotMessage('capture_lead');
-    } else if (!state.leadData.company) {
-      state.leadData.company = text.length > 5 && !text.includes('@') ? text : null;
-      if (state.leadData.company) showLeadConfirmation(); else showBotMessage('capture_lead');
-    } else {
-      showLeadConfirmation();
+      if (emailMatch) {
+        state.leadData.email = emailMatch[0];
+        showBotMessage('lead_company');
+      } else {
+        showBotMessage('capture_lead');
+      }
+      return;
     }
+    const isSkip = /^(skip|no|none|n\/a|later)$/i.test(trimmed);
+    if (!state.leadData.company && !isSkip && !trimmed.includes('@') && trimmed.length > 1) {
+      state.leadData.company = trimmed;
+    }
+    showLeadConfirmation();
   }
 
   function showLeadConfirmation() {
@@ -492,8 +510,9 @@
         '• 📧 Email: ' + state.leadData.email + '\n' +
         '• 🏢 Company: ' + (state.leadData.company || 'Not provided') + '\n\n' +
         'Our team will reach out within 24 hours. In the meantime:\n\n' +
-        '• 🛠️ [Install the SDK](https://agentopsmonitor.com)\n' +
-        '• 💰 [See pricing](/pricing)',
+        '• 📧 [support@agentopsmonitor.com](mailto:support@agentopsmonitor.com)\n' +
+        '• 🛠️ [Install the SDK](https://agentopsmonitor.com/#install)\n' +
+        '• 💰 [See pricing](https://agentopsmonitor.com/#pricing)',
       quickReplies: [
         { text: 'Install the SDK', next: 'install' },
         { text: 'Pricing', next: 'pricing' },
@@ -533,6 +552,7 @@
   }
 
   function showTyping() {
+    hideTyping();
     const typingDiv = document.createElement('div');
     typingDiv.id = 'aom-chatbot-typing';
     typingDiv.className = 'aom-chatbot-typing';
@@ -544,8 +564,9 @@
   function scrollToBottom() { messagesContainer.scrollTop = messagesContainer.scrollHeight; }
 
   function formatMessage(text) {
-    return (text || '')
+    return escapeHtml(text || '')
       .replace(/```([\s\S]*?)```/g, '<pre>$1</pre>')
+      .replace(/\[([^\]]+)\]\(([^)\s]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>')
       .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
       .replace(/\n/g, '<br>');
   }
@@ -554,13 +575,13 @@
 
   function saveState() {
     try {
-      localStorage.setItem(CONFIG.storageKey, JSON.stringify({ isOpen: state.isOpen, messages: state.messages.slice(-50) }));
+      localStorage.setItem(CONFIG.storageKey, JSON.stringify({ isOpen: state.isOpen }));
     } catch (e) {}
   }
   function loadState() {
     try {
       const saved = JSON.parse(localStorage.getItem(CONFIG.storageKey));
-      if (saved) { state.isOpen = saved.isOpen || false; state.messages = saved.messages || []; if (state.isOpen && CONFIG.persistOpen) openChat(); }
+      if (saved) { state.isOpen = saved.isOpen || false; state.messages = []; if (state.isOpen && CONFIG.persistOpen) openChat(); }
     } catch (e) {}
   }
 
