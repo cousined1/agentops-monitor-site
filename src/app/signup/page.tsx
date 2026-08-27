@@ -4,6 +4,7 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { getAuthActions, getServerClient } from "@/lib/insforge";
+import { SignupSubmitButton } from "@/components/signup-track";
 
 const PENDING_SIGNUP_COOKIE = "aom_pending_signup";
 
@@ -104,7 +105,7 @@ export default async function SignupPage({
       if (profileError)
         redirect(`/signup?error=${encodeURIComponent(profileError.message)}`);
     }
-    redirect("/app");
+    redirect("/app?signup=success");
   }
 
   async function verifyEmail(formData: FormData) {
@@ -144,7 +145,7 @@ export default async function SignupPage({
     }
 
     (await cookies()).delete(PENDING_SIGNUP_COOKIE);
-    redirect("/app");
+    redirect("/app?signup=success");
   }
 
   return (
@@ -200,9 +201,9 @@ export default async function SignupPage({
               Company
               <input name="company" type="text" autoComplete="organization" />
             </label>
-            <button className="cta cta-primary" type="submit">
+            <SignupSubmitButton className="cta cta-primary">
               Create account
-            </button>
+            </SignupSubmitButton>
           </form>
         )}
         <p>
