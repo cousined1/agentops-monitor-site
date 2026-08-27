@@ -18,6 +18,25 @@
   <meta name="twitter:description" content="Privacy notice for the AgentOps Monitor pre-launch site.">
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' fill='%230e1116'/%3E%3Cpath d='M3 4h10M3 8h10M3 12h10' stroke='%2356d364' stroke-width='1.5'/%3E%3C/svg%3E">
   <link rel="stylesheet" href="styles.css">
+  <style>
+    :focus-visible { outline: 2px solid #56d364; outline-offset: 2px; }
+    :focus { outline-color: #56d364; }
+  </style>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag("consent", "default", {
+      ad_storage: "denied",
+      analytics_storage: "denied",
+      ad_user_data: "denied",
+      ad_personalization: "denied",
+      functionality_storage: "denied",
+      personalization_storage: "denied",
+      security_storage: "granted",
+      wait_for_update: 500
+    });
+  </script>
+  <script src="cookie-consent.js" defer></script>
 </head>
 <body>
   <a class="skip" href="#main">Skip to content</a>
@@ -45,14 +64,25 @@
       <p class="lede">This page covers the pre-launch marketing site at agentopsmonitor.com. The AgentOps Monitor product itself is not yet shipped; this notice applies only to site visits.</p>
     </section>
 
-    <section class="legal-block">
+    <section class="legal-block" data-surface="real" data-fidelity="real" aria-label="What we collect">
       <h2>What we collect</h2>
-      <p>The static site collects no first party analytics. The hosting platform may record standard request logs (IP, user agent, request path, response status) for operational security and abuse detection. Cookies are not set for tracking. No third party scripts, fonts, or pixels are loaded.</p>
+      <p>The static site currently runs no analytics, advertising, chat, or other third party tracking scripts. The hosting platform may record standard request logs (IP, user agent, request path, response status) for operational security and abuse detection. The site stores your privacy choice in local browser storage so it can respect that choice on later visits.</p>
+      <pre><code>// Example privacy preference payload
+{
+  "analytics": false,
+  "marketing": false,
+  "timestamp": "2026-08-19T00:00:00.000Z"
+}</code></pre>
     </section>
 
     <section class="legal-block">
       <h2>How we use the information</h2>
       <p>Request logs are used to keep the site available, detect malicious traffic, and investigate incidents. Logs are retained by the hosting platform on its standard schedule and are not sold or shared.</p>
+    </section>
+
+    <section class="legal-block">
+      <h2>Cookies and privacy choices</h2>
+      <p>Optional analytics, preference, and marketing technologies remain off unless you allow them. Global Privacy Control signals keep marketing off. Read the <a href="/cookie-policy">Cookie Policy</a> for the current technology inventory, or <button class="legal-control" type="button" data-cookie-preferences>open Cookie Preferences</button> to update or withdraw consent.</p>
     </section>
 
     <section class="legal-block">
@@ -76,7 +106,7 @@
   <footer class="footer">
     <div class="footer-inner">
       <p>AgentOps Monitor · pre-launch · concepts shown are concept renderings built from the shipping data model.</p>
-      <p class="footer-meta"><a href="/">top</a></p>
+      <p class="footer-meta"><a href="/cookie-policy">Cookie Policy</a> · <button class="footer-control" type="button" data-cookie-preferences>Cookie Preferences</button> · <a href="/">top</a></p>
     </div>
   </footer>
 </body>

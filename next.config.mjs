@@ -27,6 +27,7 @@ const nextConfig = {
   async rewrites() {
     return {
       beforeFiles: [
+        { source: "/", destination: "/index.html" },
         { source: "/privacy", destination: "/privacy.html" },
         { source: "/cookie-policy", destination: "/cookie-policy.html" },
       ],
