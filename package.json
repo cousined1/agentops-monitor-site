@@ -4,9 +4,44 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "start": "node server.mjs"
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "start:static": "node server.mjs",
+    "typecheck": "tsc --noEmit"
   },
   "engines": {
     "node": ">=20"
+  },
+  "description": "Pre-launch concept site for an AI-agent observability product. The current brand name is provisional because `AgentOps.ai` already operates in this category.",
+  "main": "cookie-consent.js",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/cousined1/agentops-monitor-site.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/cousined1/agentops-monitor-site/issues"
+  },
+  "homepage": "https://github.com/cousined1/agentops-monitor-site#readme",
+  "dependencies": {
+    "@insforge/sdk": "^1.5.2",
+    "ky": "^1.10.0",
+    "next": "^15.5.23",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-hook-form": "^7.85.0",
+    "stripe": "^22.5.0",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@types/node": "^20.19.43",
+    "@types/react": "^18.3.31",
+    "@types/react-dom": "^18.3.7",
+    "eslint": "^9.39.5",
+    "eslint-config-next": "^15.5.23",
+    "typescript": "^5.9.3"
   }
 }

@@ -1,6 +1,40 @@
 node_modules/
+.next/
+.next-build/
+out/
+dist/
+.env
+.env.local
+.env.*.local
+.env.production
+!.env.example
 stdout.log
 stderr.log
 .railway/
 shots/
 variants/*/screenshot.png/
+
+# InsForge & AI agent skills
+.insforge
+.agent
+.agents
+.augment
+.claude
+.cline
+.github/copilot*
+.kilocode
+.qoder
+.qwen
+.roo
+.trae
+.windsurf
+
+# Local development traces
+.insforge-link.log
+.insforge-migration-create.log
+.insforge-migration-apply.log
+.insforge-branch.log
+.insforge-migrations-list.log
+
+# TypeScript incremental build cache
+*.tsbuildinfo
