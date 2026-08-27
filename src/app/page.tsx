@@ -47,7 +47,7 @@ export default async function HomePage() {
       <section id="trace">
         <h2>Replay every tool call and LLM decision</h2>
         <p>
-          Every run becomes a replayable timeline — model output, tool calls, latencies, errors. Click any span to see the prompt, the model's response, and what it changed in the world.
+          Every run becomes a replayable timeline — model output, tool calls, latencies, errors. Click any span to see the prompt, the model output, and what the agent changed in the world.
         </p>
         <pre className="install"><code>+0 ms      refund-triage-v3 start
 +12 ms     llm openai.chat        8,204 tok
@@ -58,8 +58,8 @@ export default async function HomePage() {
 +18,402 ms tool slack.postMessage
 +48,219 ms end · budget exceeded</code></pre>
         <p>
-          <a className="cta cta-primary" href="/signup">Start tracing</a>{" "}
-          <a className="cta cta-ghost" href="/#install">Install the SDK</a>
+          <a className="cta cta-primary" href="/features">See features</a>{" "}
+          <a className="cta cta-ghost" href="/signup">Start tracing</a>
         </p>
       </section>
 
@@ -69,8 +69,8 @@ export default async function HomePage() {
           Tokens in and out, USD per span, total per run. Catch the agent that loops 64K tokens before it invoices you. Set a hard budget cap at the workflow, the agent, or the user — the run stops at the limit you set.
         </p>
         <p>
-          <a className="cta cta-primary" href="/signup">Set a budget cap</a>{" "}
-          <a className="cta cta-ghost" href="/#pricing">View pricing</a>
+          <a className="cta cta-primary" href="/pricing">See pricing</a>{" "}
+          <a className="cta cta-ghost" href="/signup">Set a budget cap</a>
         </p>
       </section>
 
@@ -81,14 +81,18 @@ agentops_monitor.init(api_key="aom_live_...")</code></pre>
         <p>
           The SDK ships ingestion for LangChain, CrewAI, OpenAI, and Anthropic. Capture every tool call and LLM decision and stream it to your dashboard.
         </p>
+        <p>
+          <a className="cta cta-primary" href="/docs">Read the docs</a>{" "}
+          <a className="cta cta-ghost" href="/integrations">See integrations</a>
+        </p>
       </section>
 
       <section id="pricing">
         <h2>Pricing</h2>
         <p>Free up to 10,000 runs a month. Team is $299 with 500,000 runs. Enterprise starts at $2,000.</p>
         <p>
-          <a className="cta cta-primary" href="/signup">Get started</a>{" "}
-          <a className="cta cta-ghost" href="/#install">Install the SDK</a>
+          <a className="cta cta-primary" href="/pricing">See full pricing</a>{" "}
+          <a className="cta cta-ghost" href="/signup">Start free</a>
         </p>
       </section>
     </>
