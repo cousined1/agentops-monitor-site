@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Script from "next/script";
 import "./globals.css";
+import { Analytics } from "@/components/Analytics";
 import { Footer } from "@/components/footer";
 
 export const metadata: Metadata = {
@@ -33,6 +34,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           `}
         </Script>
         <Script src="/cookie-consent.js" strategy="afterInteractive" />
+        <Analytics />
         {children}
         <Footer />
       </body>

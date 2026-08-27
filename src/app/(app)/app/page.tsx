@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { getServerClient } from "@/lib/insforge";
+import { SignupCompletedTracker } from "@/components/signup-completed-tracker";
 
 export const metadata: Metadata = {
   title: "Dashboard",
@@ -32,6 +33,7 @@ export default async function DashboardPage() {
 
   return (
     <>
+      <SignupCompletedTracker />
       <section>
         <h1>Dashboard</h1>
         <p className="lede">A live view of what your agents are doing right now.</p>
