@@ -79,7 +79,8 @@ a:focus-visible, button:focus-visible, .cta:focus-visible {
   border-bottom: none;
   color: var(--text);
 }
-.brand-mark { color: var(--accent); font-weight: 700; letter-spacing: -1px; }
+.brand-mark { color: var(--accent); display: inline-flex; align-self: center; }
+.brand-mark svg { display: block; }
 .brand-name { font-weight: 600; }
 .brand-meta { color: var(--text-muted); font-size: 12px; }
 .nav {

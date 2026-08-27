@@ -78,9 +78,11 @@ const server = createServer(async (request, response) => {
   }
 
   let relativePath = pathname === "/" ? "index.html" : pathname.slice(1);
-  if (relativePath === "privacy") {
-    relativePath = "privacy.html";
-  }
+  const legalRoutes = new Map([
+    ["privacy", "privacy.html"],
+    ["cookie-policy", "cookie-policy.html"],
+  ]);
+  relativePath = legalRoutes.get(relativePath) ?? relativePath;
   const filePath = resolve(root, relativePath);
   if (filePath !== root && !filePath.startsWith(`${root}${sep}`)) {
     response.writeHead(403);
