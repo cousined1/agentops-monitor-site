@@ -353,7 +353,7 @@ main section + section {
   margin: 0 auto;
   display: grid;
   gap: 32px;
-  grid-template-columns: 1.4fr repeat(3, 1fr);
+  grid-template-columns: 1.4fr repeat(4, 1fr);
 }
 .footer-brand .brand-name {
   color: var(--text);

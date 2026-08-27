@@ -1,12 +1,5 @@
 import Link from "next/link";
 
-/**
- * Persistent site footer. Renders on every page via the root layout.
- * Sections only link to routes that exist. Includes the required Cookie
- * Policy link and a "Cookie Preferences" trigger that re-opens the
- * consent dialog injected by public/cookie-consent.js (which delegates
- * any click on `[data-cookie-preferences]` to open the preferences dialog).
- */
 export function Footer() {
   return (
     <footer className="footer" aria-label="Site footer">
@@ -20,16 +13,13 @@ export function Footer() {
           <h3>Product</h3>
           <ul>
             <li>
-              <Link href="/#trace">Trace</Link>
+              <Link href="/features">Features</Link>
             </li>
             <li>
-              <Link href="/#cost">Cost</Link>
+              <Link href="/pricing">Pricing</Link>
             </li>
             <li>
-              <Link href="/#install">Install</Link>
-            </li>
-            <li>
-              <Link href="/#pricing">Pricing</Link>
+              <Link href="/integrations">Integrations</Link>
             </li>
             <li>
               <Link href="/app">Dashboard</Link>
@@ -58,6 +48,27 @@ export function Footer() {
           </ul>
         </nav>
 
+        <nav className="footer-section" aria-label="Resources">
+          <h3>Resources</h3>
+          <ul>
+            <li>
+              <Link href="/docs">Docs</Link>
+            </li>
+            <li>
+              <Link href="/help">Help</Link>
+            </li>
+            <li>
+              <Link href="/blog">Blog</Link>
+            </li>
+            <li>
+              <Link href="/about">About</Link>
+            </li>
+            <li>
+              <Link href="/contact">Contact</Link>
+            </li>
+          </ul>
+        </nav>
+
         <nav className="footer-section" aria-label="Legal">
           <h3>Legal</h3>
           <ul>
@@ -66,6 +77,9 @@ export function Footer() {
             </li>
             <li>
               <Link href="/cookie-policy">Cookie Policy</Link>
+            </li>
+            <li>
+              <Link href="/terms">Terms of Service</Link>
             </li>
           </ul>
         </nav>
