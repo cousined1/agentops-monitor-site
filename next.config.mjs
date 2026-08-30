@@ -7,7 +7,7 @@ const nextConfig = {
           {
             key: "Content-Security-Policy",
             value:
-              "default-src 'self'; base-uri 'self'; connect-src 'self' https://*.insforge.app https://www.google-analytics.com https://*.analytics.google.com https://www.googletagmanager.com; font-src 'self' data:; form-action 'self'; frame-ancestors 'none'; frame-src 'self' https://www.googletagmanager.com https://www.google-analytics.com; img-src 'self' data: https://www.google-analytics.com https://*.analytics.google.com; object-src 'none'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; upgrade-insecure-requests",
+              "default-src 'self'; base-uri 'self'; connect-src 'self' https://*.insforge.app https://cloudflareinsights.com https://*.cloudflareinsights.com https://www.google-analytics.com https://*.analytics.google.com https://www.googletagmanager.com; font-src 'self' data:; form-action 'self'; frame-ancestors 'none'; frame-src 'self' https://www.googletagmanager.com https://www.google-analytics.com; img-src 'self' data: https://www.google-analytics.com https://*.analytics.google.com; object-src 'none'; script-src 'self' 'unsafe-inline' https://static.cloudflareinsights.com; style-src 'self' 'unsafe-inline'; upgrade-insecure-requests",
           },
           { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
           {

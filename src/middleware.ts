@@ -21,6 +21,8 @@ const PUBLIC_PATHS = new Set([
   "/og-image.svg",
   "/styles.css",
   "/index.html",
+  "/cookie-consent.js",
+  "/aom-chatbot.js",
   "/login",
   "/signup",
   "/api/health",
