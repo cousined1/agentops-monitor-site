@@ -53,6 +53,18 @@ describe("backend security boundaries", () => {
     );
   });
 
+  it("preserves protected-route query parameters through login", async () => {
+    const { middleware } = await import("../src/middleware.ts");
+    const { NextRequest } = await import("next/server");
+    const request = new NextRequest("https://app.example/app/runs?status=failed");
+
+    const response = await middleware(request);
+
+    expect(response.headers.get("location")).toBe(
+      "https://app.example/login?next=%2Fapp%2Fruns%3Fstatus%3Dfailed",
+    );
+  });
+
   it("falls back to the dashboard after an untrusted login redirect", async () => {
     const { safeRedirectPath } = await import("../src/lib/redirects.ts");
 

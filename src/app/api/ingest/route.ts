@@ -44,6 +44,19 @@ const IngestSchema = z.object({
   spans: z.array(SpanSchema).max(1000).default([]),
 });
 
+const IngestResultSchema = z.discriminatedUnion("ok", [
+  z.object({
+    ok: z.literal(true),
+    run_id: z.string().uuid(),
+    span_count: z.number().int().nonnegative(),
+  }),
+  z.object({
+    ok: z.literal(false),
+    code: z.enum(["invalid_api_key", "rate_limited"]),
+    message: z.string(),
+  }),
+]);
+
 function error(status: number, message: string, code: string) {
   return NextResponse.json({ error: { message, code } }, { status });
 }
@@ -64,17 +77,6 @@ export async function POST(request: NextRequest) {
     apiKey: env.INSFORGE_API_KEY,
   });
 
-  const { data: keyRow, error: keyError } = await admin.database
-    .from("api_keys")
-    .select("id,user_id,is_active")
-    .eq("key_hash", hash)
-    .maybeSingle() as { data: { id: string; user_id: string; is_active: boolean } | null; error: { message: string } | null };
-
-  if (keyError) return error(500, keyError.message, "key_lookup_failed");
-  if (!keyRow || keyRow.is_active === false) {
-    return error(401, "Unknown or disabled API key.", "invalid_api_key");
-  }
-
   let payload: z.infer<typeof IngestSchema>;
   try {
     payload = IngestSchema.parse(await request.json());
@@ -84,75 +86,30 @@ export async function POST(request: NextRequest) {
     return error(400, message, "invalid_payload");
   }
 
-  const { data: upserted, error: runError } = await admin.database
-    .from("runs")
-    .upsert(
-      [
-        {
-          user_id: keyRow.user_id,
-          api_key_id: keyRow.id,
-          external_id: payload.external_id,
-          agent_name: payload.agent_name,
-          status: payload.status,
-          started_at: payload.started_at,
-          ended_at: payload.ended_at,
-          duration_ms: payload.duration_ms,
-          tokens_in: payload.tokens_in,
-          tokens_out: payload.tokens_out,
-          cost_usd: payload.cost_usd,
-          span_count: payload.spans.length,
-          metadata: payload.metadata,
-        },
-      ],
-      { onConflict: "user_id,external_id" },
-    )
-    .select("id")
-    .single();
-
-  if (runError || !upserted) {
-    return error(500, runError?.message ?? "Run upsert failed.", "run_upsert_failed");
+  const { data: rpcData, error: rpcError } = await admin.database.rpc(
+    "ingest_agent_run",
+    {
+      p_key_hash: hash,
+      p_payload: payload,
+      p_rate_limit: env.INGEST_RATE_LIMIT_PER_MIN,
+    },
+  );
+  if (rpcError) {
+    return error(500, rpcError.message, "ingest_transaction_failed");
   }
 
-  if (payload.spans.length > 0) {
-    const { error: spansError } = await admin.database.from("spans").insert(
-      payload.spans.map((span) => ({
-        ...(span.id ? { id: span.id } : {}),
-        run_id: upserted.id,
-        user_id: keyRow.user_id,
-        parent_id: span.parent_id ?? null,
-        span_type: span.span_type,
-        provider: span.provider ?? null,
-        model: span.model ?? null,
-        tool_name: span.tool_name ?? null,
-        status: span.status,
-        started_at: span.started_at,
-        duration_ms: span.duration_ms ?? null,
-        tokens_in: span.tokens_in,
-        tokens_out: span.tokens_out,
-        cost_usd: span.cost_usd,
-        input: span.input,
-        output: span.output,
-        error: span.error ?? null,
-        metadata: span.metadata,
-      })),
-    );
-    if (spansError) return error(500, spansError.message, "span_insert_failed");
+  const result = IngestResultSchema.safeParse(rpcData);
+  if (!result.success) {
+    return error(500, "Ingest transaction returned an invalid result.", "invalid_ingest_result");
   }
-
-  const { error: usageError } = await admin.database.from("usage_events").insert({
-    user_id: keyRow.user_id,
-    run_id: upserted.id,
-  });
-  if (usageError) return error(500, usageError.message, "usage_insert_failed");
-
-  await admin.database
-    .from("api_keys")
-    .update({ last_used_at: new Date().toISOString() })
-    .eq("id", keyRow.id);
+  if (!result.data.ok) {
+    const status = result.data.code === "rate_limited" ? 429 : 401;
+    return error(status, result.data.message, result.data.code);
+  }
 
   return NextResponse.json({
     ok: true,
-    run_id: upserted.id,
-    span_count: payload.spans.length,
+    run_id: result.data.run_id,
+    span_count: result.data.span_count,
   });
 }
