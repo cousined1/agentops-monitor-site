@@ -26,9 +26,11 @@ const PUBLIC_PATHS = new Set([
   "/login",
   "/signup",
   "/api/health",
+  "/api/auth/refresh",
+  "/api/auth/sign-out",
+  "/api/ingest",
+  "/api/stripe/webhook",
 ]);
-
-const PUBLIC_API_PREFIXES = ["/api/auth", "/api/ingest", "/_next", "/favicon"];
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -40,13 +42,14 @@ export async function middleware(request: NextRequest) {
       responseCookies: response.cookies,
     });
   } catch (error) {
-    console.error("[middleware] updateSession failed:", error);
+    console.error(
+      "[middleware] updateSession failed:",
+      error instanceof Error ? error : new Error("Unknown session refresh failure"),
+    );
   }
   const accessToken = session?.accessToken ?? null;
 
   if (PUBLIC_PATHS.has(pathname)) return response;
-  if (PUBLIC_API_PREFIXES.some((prefix) => pathname.startsWith(prefix)))
-    return response;
 
   if (!accessToken) {
     const url = request.nextUrl.clone();

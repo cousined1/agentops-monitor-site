@@ -8,7 +8,7 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 const SpanSchema = z.object({
-  id: z.string().min(1).optional(),
+  id: z.string().uuid().optional(),
   parent_id: z.string().uuid().nullable().optional(),
   span_type: z.enum(["llm", "tool", "workflow"]),
   provider: z.string().max(64).nullable().optional(),
@@ -41,7 +41,7 @@ const IngestSchema = z.object({
   tokens_out: z.number().int().nonnegative().default(0),
   cost_usd: z.number().nonnegative().default(0),
   metadata: z.object({}).passthrough().default({}),
-  spans: z.array(SpanSchema).default([]),
+  spans: z.array(SpanSchema).max(1000).default([]),
 });
 
 function error(status: number, message: string, code: string) {
@@ -79,7 +79,9 @@ export async function POST(request: NextRequest) {
   try {
     payload = IngestSchema.parse(await request.json());
   } catch (parseError) {
-    return error(400, (parseError as Error).message, "invalid_payload");
+    const message =
+      parseError instanceof Error ? parseError.message : "Invalid request payload.";
+    return error(400, message, "invalid_payload");
   }
 
   const { data: upserted, error: runError } = await admin.database
@@ -114,7 +116,9 @@ export async function POST(request: NextRequest) {
   if (payload.spans.length > 0) {
     const { error: spansError } = await admin.database.from("spans").insert(
       payload.spans.map((span) => ({
+        ...(span.id ? { id: span.id } : {}),
         run_id: upserted.id,
+        user_id: keyRow.user_id,
         parent_id: span.parent_id ?? null,
         span_type: span.span_type,
         provider: span.provider ?? null,
