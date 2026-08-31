@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getAuthActions } from "@/lib/insforge";
+import { safeRedirectPath } from "@/lib/redirects";
 
 export const metadata: Metadata = {
   title: "Sign in",
@@ -15,7 +16,7 @@ export default async function LoginPage({
   searchParams: Promise<{ next?: string; error?: string }>;
 }) {
   const params = await searchParams;
-  const next = params.next ?? "/app";
+  const next = safeRedirectPath(params.next);
 
   async function login(formData: FormData) {
     "use server";
