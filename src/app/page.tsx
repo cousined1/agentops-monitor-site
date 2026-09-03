@@ -47,7 +47,7 @@ export default async function HomePage() {
       <section id="trace">
         <h2>Replay every tool call and LLM decision</h2>
         <p>
-          Every run becomes a replayable timeline — model output, tool calls, latencies, errors. Click any span to see the prompt, the model output, and what the agent changed in the world.
+          Every run becomes a replayable timeline: model output, tool calls, latencies, errors. Click any span to see the prompt, the model output, and what the agent changed in the world.
         </p>
         <pre className="install"><code>+0 ms      refund-triage-v3 start
 +12 ms     llm openai.chat        8,204 tok
@@ -66,7 +66,7 @@ export default async function HomePage() {
       <section id="cost">
         <h2>Track every dollar an agent spends</h2>
         <p>
-          Tokens in and out, USD per span, total per run. Catch the agent that loops 64K tokens before it invoices you. Set a hard budget cap at the workflow, the agent, or the user — the run stops at the limit you set.
+          Tokens in and out, USD per span, total per run. Catch the agent that loops 64K tokens before it invoices you. Set a hard budget cap at the workflow, the agent, or the user: the run stops at the limit you set.
         </p>
         <p>
           <a className="cta cta-primary" href="/pricing">See pricing</a>{" "}

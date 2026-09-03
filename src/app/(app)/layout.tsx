@@ -2,6 +2,8 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getServerClient } from "@/lib/insforge";
 
+export const dynamic = "force-dynamic";
+
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const insforge = await getServerClient();
   const { data: userData } = await insforge.auth.getCurrentUser();

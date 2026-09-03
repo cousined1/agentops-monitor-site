@@ -2,16 +2,16 @@ import { createBrowserClient, createServerClient, createAuthActions } from "@ins
 import { cookies } from "next/headers";
 import { appEnv } from "./env";
 
-const baseUrl = process.env.NEXT_PUBLIC_INSFORGE_URL;
-const anonKey = process.env.NEXT_PUBLIC_INSFORGE_ANON_KEY;
-
-if (!baseUrl || !anonKey) {
-  throw new Error(
-    "NEXT_PUBLIC_INSFORGE_URL and NEXT_PUBLIC_INSFORGE_ANON_KEY must be defined for the browser client.",
-  );
-}
-
 export function getBrowserClient() {
+  const baseUrl = process.env.NEXT_PUBLIC_INSFORGE_URL;
+  const anonKey = process.env.NEXT_PUBLIC_INSFORGE_ANON_KEY;
+
+  if (!baseUrl || !anonKey) {
+    throw new Error(
+      "NEXT_PUBLIC_INSFORGE_URL and NEXT_PUBLIC_INSFORGE_ANON_KEY must be defined for the browser client.",
+    );
+  }
+
   return createBrowserClient({ baseUrl, anonKey });
 }
 

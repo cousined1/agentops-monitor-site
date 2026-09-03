@@ -14,7 +14,7 @@ export default function AboutPage() {
         <p className="eyebrow">About</p>
         <h1>Find the call that cost you four hundred dollars.</h1>
         <p className="lede">
-          AgentOps Monitor replays every tool call, every LLM decision, and every dollar an agent spends — so an on-call engineer at 2 a.m. can stop guessing and start fixing.
+          AgentOps Monitor replays every tool call, every LLM decision, and every dollar an agent spends, so an on-call engineer at 2 a.m. can stop guessing and start fixing.
         </p>
         <p>
           <a className="cta cta-primary" href="/features">See features</a>{" "}

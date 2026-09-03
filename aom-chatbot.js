@@ -1,8 +1,8 @@
 /**
- * AgentOps Monitor — Floating Sales Chatbot Widget
+ * AgentOps Monitor · Floating Sales Chatbot Widget
  * Embeddable floating salesbot for agentopsmonitor.com
  * Adapted from the ace-regulatory ace-chatbot.js pattern.
- * Usage: <script src="https://your-cdn.com/aom-chatbot.js" async></script>
+ * Usage: <script src="/aom-chatbot.js" async></script>
  *
  * Zero-dependency: no build step, no backend required. Lead capture posts to
  * CONFIG.apiEndpoint (optional). Works standalone on a static site.
@@ -15,7 +15,7 @@
   // ------------------------------------------------------------------
   const CONFIG = {
     position: 'bottom-right',
-    primaryColor: '#0f766e',        // teal — agent/monitor feel
+    primaryColor: '#0f766e',        // teal: agent/monitor feel
     secondaryColor: '#115e59',
     accentColor: '#f59e0b',         // amber highlight (cost/budget warning)
     botName: 'AgentOps Assistant',
@@ -24,10 +24,9 @@
     siteUrl: 'https://agentopsmonitor.com',
     welcomeMessage:
       "👋 Hi! I'm the AgentOps Monitor assistant. I can help you understand how we track AI-agent costs and tool calls, walk through a trace, or get you started with the SDK.",
-    apiEndpoint: null,              // e.g. "/api/leads" — POST lead JSON here if set
+    apiEndpoint: '/api/leads',
     showOnLoad: true,
     delayBeforeOpen: 2500,
-    persistOpen: false,
     storageKey: 'aom-chatbot-state',
     leadStorageKey: 'aom-chatbot-lead',
   };
@@ -53,7 +52,7 @@
     },
     about: {
       message:
-        '📡 **AgentOps Monitor** is observability for AI agents in production. It replays every tool call, every LLM decision, and every dollar an agent spends — so an on-call engineer at 2 a.m. can stop guessing and start fixing.\n\n' +
+        '📡 **AgentOps Monitor** is observability for AI agents in production. It replays every tool call, every LLM decision, and every dollar an agent spends, so an on-call engineer at 2 a.m. can stop guessing and start fixing.\n\n' +
         '**The pitch:** *"Find the call that cost you four hundred dollars."*\n\n' +
         'It tracks: cost per run, token counts (in/out), every LLM call, every tool call (Stripe, Slack, vectorstore, etc.), and budget caps.',
       quickReplies: [
@@ -66,7 +65,7 @@
     fourhundred: {
       message:
         '💸 An agent with no budget is an incident waiting to be invoiced.\n\n' +
-        'Example: a refund-triage agent (`refund-triage-v3`) hit a run where **one span ran hot** — 412,880 tokens, $18.44, a held Stripe refund, 3 retries, then **budget exceeded**. Three minutes of looping, and on-call saw the bill before they saw the fix.\n\n' +
+        'Example: a refund-triage agent (`refund-triage-v3`) hit a run where **one span ran hot**: 412,880 tokens, $18.44, a held Stripe refund, 3 retries, then **budget exceeded**. Three minutes of looping, and on-call saw the bill before they saw the fix.\n\n' +
         'AgentOps Monitor catches that: you see the exact call that cost you, and you see it before the invoice arrives.',
       quickReplies: [
         { text: 'Show me the trace', next: 'trace' },
@@ -90,19 +89,19 @@
     },
     trace: {
       message:
-        '🔍 **Example trace — run `r_9f2c1a4e`**\n\n' +
+        '🔍 **Example trace · run `r_9f2c1a4e`**\n\n' +
         'Agent: `refund-triage-v3` · **Budget exceeded**\n' +
         '• Duration: 48,219 ms · 412 spans\n' +
         '• Cost: **$18.44** · Tokens: 412,880 in / 88,104 out\n\n' +
         '**Timeline:**\n' +
-        '• +0 ms — `refund-triage-v3` start\n' +
-        '• +12 ms — `llm` openai.chat · 8,204 tok\n' +
-        '• +612 ms — `tool` vectorstore.query\n' +
-        '• +820 ms — `tool` stripe.refunds.create · **HELD**\n' +
-        '• +5,402 ms — `tool` retries × 3\n' +
-        '• +11,008 ms — `llm` openai.chat · 64,118 tok\n' +
-        '• +18,402 ms — `tool` slack.postMessage\n' +
-        '• +48,219 ms — **end · budget exceeded**\n\n' +
+        '• +0 ms · `refund-triage-v3` start\n' +
+        '• +12 ms · `llm` openai.chat · 8,204 tok\n' +
+        '• +612 ms · `tool` vectorstore.query\n' +
+        '• +820 ms · `tool` stripe.refunds.create · **HELD**\n' +
+        '• +5,402 ms · `tool` retries × 3\n' +
+        '• +11,008 ms · `llm` openai.chat · 64,118 tok\n' +
+        '• +18,402 ms · `tool` slack.postMessage\n' +
+        '• +48,219 ms · **end · budget exceeded**\n\n' +
         'Click a span to see the prompt, the model output, and what it changed in the world.',
       quickReplies: [
         { text: 'How do caps stop this?', next: 'budgets' },
@@ -113,7 +112,7 @@
     budgets: {
       message:
         '🛑 **Spend you can defend in a budget meeting.**\n\n' +
-        'Hard caps at the **workflow**, the **agent**, and the **user**. A run stops at the limit you set — not at the limit your CFO finds out about.\n\n' +
+        'Hard caps at the **workflow**, the **agent**, and the **user**. A run stops at the limit you set, not at the limit your CFO finds out about.\n\n' +
         '**Guardrails (example policy):**\n' +
         '• `refund.cap_per_run_usd: 50`\n' +
         '• `require_approval_above: 250` (approver: finance-lead)\n' +
@@ -129,10 +128,10 @@
     },
     install: {
       message:
-        '🛠️ **Install the SDK — three lines.**\n\n' +
+        '🛠️ **Install the SDK · three lines.**\n\n' +
         '```\nfrom agentops_monitor import monitor\nmonitor.init(api_key="aom_...", budget_usd=50)\n```\n\n' +
         'Planned adapters: **LangChain**, **CrewAI**, and the **OpenAI SDK**.\n\n' +
-        '*Pre-launch interface — package name and adapter compatibility are provisional.*',
+        '*Pre-launch interface: package name and adapter compatibility are provisional.*',
       quickReplies: [
         { text: 'Pricing', next: 'pricing' },
         { text: 'What plans?', next: 'pricing' },
@@ -142,11 +141,11 @@
     pricing: {
       message:
         '💰 **Planned launch pricing:**\n\n' +
-        '**Free — $0/mo**\n• 10,000 agent runs / month\n• Basic tracing\n• Community support\n\n' +
-        '**Team — $299/mo**\n• 500,000 runs\n• Cost governance, alerts\n• Slack support\n\n' +
-        '**Enterprise — from $2,000/mo**\n• Custom run limits\n• SSO, audit export, custom policies\n• Named support\n\n' +
-        '**Overage — metered** · $1.00 per 1,000 runs after the first 500K.\n\n' +
-        '*(Pre-launch pricing — see the site for the latest.)*',
+        '**Free · $0/mo**\n• 10,000 agent runs / month\n• Basic tracing\n• Community support\n\n' +
+        '**Team · $299/mo**\n• 500,000 runs\n• Cost governance, alerts\n• Slack support\n\n' +
+        '**Enterprise · from $2,000/mo**\n• Custom run limits\n• SSO, audit export, custom policies\n• Named support\n\n' +
+        '**Overage · metered** · $1.00 per 1,000 runs after the first 500K.\n\n' +
+        '*(Pre-launch pricing: see the site for the latest.)*',
       quickReplies: [
         { text: 'Compare plans', next: 'compare' },
         { text: 'Audit trail', next: 'audit' },
@@ -156,15 +155,15 @@
     compare: {
       message:
         '📊 **Plan comparison (per month):**\n\n' +
-        '| | Free | Team | Enterprise |\n' +
+        '| Plan | Free | Team | Enterprise |\n' +
         '|---|---|---|---|\n' +
         '| Runs | 10K | 500K | Custom |\n' +
         '| Price | $0 | $299 | from $2,000 |\n' +
         '| Tracing | Basic | Full | Full |\n' +
-        '| Cost governance | – | ✅ | ✅ |\n' +
-        '| Alerts | – | ✅ | ✅ |\n' +
-        '| SSO | – | – | ✅ |\n' +
-        '| Audit export | – | – | ✅ |\n' +
+        '| Cost governance | - | ✅ | ✅ |\n' +
+        '| Alerts | - | ✅ | ✅ |\n' +
+        '| SSO | - | - | ✅ |\n' +
+        '| Audit export | - | - | ✅ |\n' +
         '| Support | Community | Slack | Named |\n\n' +
         'Overage: $1.00 per 1,000 runs after 500K (metered).',
       quickReplies: [
@@ -176,11 +175,11 @@
     audit: {
       message:
         '📋 **What an audit reader actually gets:**\n\n' +
-        '• **Prompt** — hash + length, policy window\n' +
-        '• **Model output** — hash + length, policy window\n' +
-        '• **Tool call** — args, response, latency, policy window\n' +
-        '• **Human approval** — approver, role, time, policy window\n' +
-        '• **Policy block** — rule, value, decision, policy window\n\n' +
+        '• **Prompt** · hash + length, policy window\n' +
+        '• **Model output** · hash + length, policy window\n' +
+        '• **Tool call** · args, response, latency, policy window\n' +
+        '• **Human approval** · approver, role, time, policy window\n' +
+        '• **Policy block** · rule, value, decision, policy window\n\n' +
         'SOC 2 / HIPAA / GDPR / ISO badges are not claimed on the page. **The audit trail is the product.**',
       quickReplies: [
         { text: 'Pricing', next: 'pricing' },
@@ -190,7 +189,7 @@
     contact: {
       message:
         '📞 **Talk to AgentOps Monitor sales.**\n\n' +
-        'Leave your work email and we\u2019ll reach out — I can collect it right here.\n\n' +
+        'Leave your work email and we\u2019ll reach out, right here.\n\n' +
         'Prefer email? Write to us at [support@agentopsmonitor.com](mailto:support@agentopsmonitor.com).\n\n' +
         'If you\u2019re an **Enterprise / regulated-industry** prospect, we\u2019ll set up a discovery call rather than self-serve.',
       quickReplies: [{ text: 'Leave my email', next: 'capture_lead' }],
@@ -205,15 +204,15 @@
     },
     lead_company: {
       message:
-        '📧 Got it — **{{email}}**.\n\n' +
-        'What\u2019s your company name? (Optional \u2014 type *skip* if you\u2019d rather not say.)',
+        '📧 Got it: **{{email}}**.\n\n' +
+        'What\u2019s your company name? (Optional - type *skip* if you\u2019d rather not say.)',
       quickReplies: [{ text: 'Skip', next: 'lead_confirm' }],
       captureLead: true,
     },
     lead_confirm: { message: '', captureLead: false },
     browse: {
       message:
-        '👍 No problem — explore AgentOps Monitor.\n\n' +
+        '👍 No problem, explore AgentOps Monitor.\n\n' +
         '• 🏠 [Homepage](https://agentopsmonitor.com)\n' +
         '• 🛠️ [Install the SDK](https://agentopsmonitor.com/#install)\n\n' +
         'I\u2019ll be here if you have questions. Just reopen the chat!',
@@ -276,7 +275,7 @@
   }
 
   // State
-  let state = { isOpen: false, messages: [], currentFlow: null, awaitingInput: false, leadData: {} };
+  let state = { isOpen: false, dismissed: false, messages: [], currentFlow: null, awaitingInput: false, leadData: {} };
 
   // DOM refs
   let widget, chatButton, chatWindow, messagesContainer, inputField;
@@ -346,10 +345,16 @@
       .aom-chatbot-message.bot .aom-chatbot-message-content { border-bottom-left-radius:4px; }
       .aom-chatbot-message.user .aom-chatbot-message-content { background:linear-gradient(135deg,var(--aom-primary),var(--aom-secondary)); color:#fff; border-bottom-right-radius:4px; }
       .aom-chatbot-message-content strong { font-weight:600; }
+      .aom-chatbot-message-content code { background:#e5e7eb; padding:1px 4px; border-radius:4px; font-size:12px; font-family:ui-monospace,Menlo,monospace; }
+      .aom-chatbot-message.user .aom-chatbot-message-content code { background:rgba(0,0,0,.2); color:#fff; }
       .aom-chatbot-message-content a { color:var(--aom-primary); text-decoration:underline; }
       .aom-chatbot-message.user .aom-chatbot-message-content a { color:rgba(255,255,255,.9); }
-      .aom-chatbot-message-content pre { background:#111827; color:#e5e7eb; padding:8px 10px; border-radius:8px; font-size:11px; overflow-x:auto; }
+      .aom-chatbot-message-content pre { background:#111827; color:#e5e7eb; padding:8px 10px; border-radius:8px; font-size:11px; overflow-x:auto; font-family:ui-monospace,Menlo,monospace; margin:6px 0; }
       .aom-chatbot-message-time { font-size:10px; color:var(--aom-muted); margin-top:4px; text-align:right; }
+
+      .aom-chatbot-table { width:100%; border-collapse:collapse; margin:8px 0; font-size:11px; }
+      .aom-chatbot-table th, .aom-chatbot-table td { padding:4px 6px; border:1px solid var(--aom-border); text-align:left; }
+      .aom-chatbot-table th { background:#e5e7eb; font-weight:600; }
 
       .aom-chatbot-quick-replies { display:flex; flex-wrap:wrap; gap:6px; margin-top:8px; }
       .aom-chatbot-quick-reply { background:#fff; border:1px solid var(--aom-primary); color:var(--aom-primary);
@@ -386,6 +391,7 @@
 
     chatButton = document.createElement('button');
     chatButton.id = 'aom-chatbot-button';
+    chatButton.setAttribute('aria-label', 'Open support chat');
     chatButton.innerHTML =
       '<svg viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H6l-2 2V4h16v12z"/></svg>' +
       '<span id="aom-chatbot-close">×</span>';
@@ -397,7 +403,7 @@
       '<div id="aom-chatbot-header">' +
       '<div id="aom-chatbot-header-avatar">' + CONFIG.botAvatar + '</div>' +
       '<div id="aom-chatbot-header-info"><h3>' + CONFIG.botName + '</h3><p>Online · ' + CONFIG.companyName + '</p></div>' +
-      '<button id="aom-chatbot-header-close"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg></button>' +
+      '<button id="aom-chatbot-header-close" aria-label="Close chat"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg></button>' +
       '</div>' +
       '<div id="aom-chatbot-messages"></div>' +
       '<div id="aom-chatbot-input-area">' +
@@ -422,10 +428,18 @@
 
   function toggleChat() { state.isOpen ? closeChat() : openChat(); }
   function openChat() {
-    widget.classList.add('open'); state.isOpen = true; saveState();
+    widget.classList.add('open');
+    state.isOpen = true;
+    state.dismissed = false;
+    saveState();
     if (!messagesContainer.querySelector('.aom-chatbot-message')) showBotMessage('welcome');
   }
-  function closeChat() { widget.classList.remove('open'); state.isOpen = false; saveState(); }
+  function closeChat() {
+    widget.classList.remove('open');
+    state.isOpen = false;
+    state.dismissed = true;
+    saveState();
+  }
 
   function showBotMessage(flowKey) {
     if (flowKey === 'lead_confirm') { state.awaitingInput = false; showLeadConfirmation(); return; }
@@ -507,7 +521,7 @@
     const flow = {
       message:
         '✅ **Thank you!**\n\nI\u2019ve captured your details:\n' +
-        '• 📧 Email: ' + state.leadData.email + '\n' +
+        '• 📧 Email: ' + (state.leadData.email || 'Not provided') + '\n' +
         '• 🏢 Company: ' + (state.leadData.company || 'Not provided') + '\n\n' +
         'Our team will reach out within 24 hours. In the meantime:\n\n' +
         '• 📧 [support@agentopsmonitor.com](mailto:support@agentopsmonitor.com)\n' +
@@ -534,7 +548,9 @@
         }),
       }).catch(() => {});
     }
-    try { localStorage.setItem(CONFIG.leadStorageKey, JSON.stringify(state.leadData)); } catch (e) {}
+    if (functionalConsent()) {
+      try { localStorage.setItem(CONFIG.leadStorageKey, JSON.stringify(state.leadData)); } catch (e) {}
+    }
 
     const messageDiv = document.createElement('div');
     messageDiv.className = 'aom-chatbot-message bot';
@@ -564,33 +580,129 @@
   function scrollToBottom() { messagesContainer.scrollTop = messagesContainer.scrollHeight; }
 
   function formatMessage(text) {
-    return escapeHtml(text || '')
-      .replace(/```([\s\S]*?)```/g, '<pre>$1</pre>')
+    const codeBlocks = [];
+    let processed = escapeHtml(text || '')
+      .replace(/```([\s\S]*?)```/g, (_, code) => {
+        const idx = codeBlocks.length;
+        codeBlocks.push(`<pre>${code.trim()}</pre>`);
+        return `__CODE_BLOCK_${idx}__`;
+      })
+      .replace(/`([^`]+)`/g, '<code>$1</code>')
       .replace(/\[([^\]]+)\]\(([^)\s]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>')
-      .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-      .replace(/\n/g, '<br>');
+      .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+
+    // Parse markdown tables if present
+    processed = processed.replace(/(?:^|\n)(\|.+?\|\n\|[-: |]+\|\n(?:\|.+?\|\n?)+)/g, (match) => {
+      const rows = match.trim().split('\n').map(r => r.replace(/^\||\|$/g, '').split('|').map(c => c.trim()));
+      if (rows.length < 2) return match;
+      const header = rows[0];
+      const dataRows = rows.slice(2);
+      const ths = header.map(h => `<th>${h}</th>`).join('');
+      const trs = dataRows.map(r => `<tr>${r.map(c => `<td>${c}</td>`).join('')}</tr>`).join('');
+      return `<table class="aom-chatbot-table"><thead><tr>${ths}</tr></thead><tbody>${trs}</tbody></table>`;
+    });
+
+    processed = processed.replace(/\n/g, '<br>');
+
+    codeBlocks.forEach((block, idx) => {
+      processed = processed.replace(`__CODE_BLOCK_${idx}__`, block);
+    });
+
+    return processed;
   }
+
   function escapeHtml(text) { const div = document.createElement('div'); div.textContent = text; return div.innerHTML; }
   function getTimeString() { return new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }); }
 
-  function saveState() {
+  // Cookie consent detection across both GTM-aware and standalone models
+  function functionalConsent() {
+    if (window.__aomConsent) {
+      return !!(window.__aomConsent.functional || window.__aomConsent.preferences);
+    }
     try {
-      localStorage.setItem(CONFIG.storageKey, JSON.stringify({ isOpen: state.isOpen }));
+      const raw = localStorage.getItem('aom_cookie_consent') || localStorage.getItem('aom-cookie-consent');
+      if (!raw) return false;
+      const parsed = JSON.parse(raw);
+      const cats = parsed.categories || parsed;
+      return !!(cats.preferences || cats.functional);
+    } catch {
+      return false;
+    }
+  }
+
+  function loadSavedLeadData() {
+    if (!functionalConsent()) return;
+    try {
+      const savedLead = localStorage.getItem(CONFIG.leadStorageKey);
+      if (savedLead) {
+        const parsed = JSON.parse(savedLead);
+        if (parsed && typeof parsed === 'object') {
+          state.leadData = Object.assign(state.leadData, parsed);
+        }
+      }
+    } catch {}
+  }
+
+  function saveState() {
+    if (!functionalConsent()) return;
+    try {
+      localStorage.setItem(CONFIG.storageKey, JSON.stringify({
+        isOpen: state.isOpen,
+        dismissed: !!state.dismissed,
+      }));
     } catch (e) {}
   }
+
   function loadState() {
-    // Never restore a stale "open" flag: it suppresses auto-open and makes the
-    // first button click a no-op close(). The widget always starts closed.
-    state.isOpen = false;
     state.messages = [];
+    if (functionalConsent()) {
+      loadSavedLeadData();
+      try {
+        const savedState = localStorage.getItem(CONFIG.storageKey);
+        if (savedState) {
+          const parsed = JSON.parse(savedState);
+          if (parsed && typeof parsed === 'object') {
+            if (parsed.dismissed) {
+              state.dismissed = true;
+            }
+            if (parsed.isOpen) {
+              state.isOpen = true;
+              if (widget) widget.classList.add('open');
+            }
+          }
+        }
+      } catch {}
+    }
   }
+
+  function onConsentChange(e) {
+    const detail = e.detail;
+    const cats = detail?.categories || detail || {};
+    const allowed = !!(cats.preferences || cats.functional);
+    if (allowed) {
+      loadSavedLeadData();
+    } else {
+      state.leadData = {};
+      try {
+        localStorage.removeItem(CONFIG.storageKey);
+        localStorage.removeItem(CONFIG.leadStorageKey);
+      } catch {}
+    }
+  }
+
+  window.addEventListener('aom:consent-updated', onConsentChange);
+  document.addEventListener('aom:consent', onConsentChange);
 
   let initialized = false;
   function init() {
     if (initialized) return;
     initialized = true;
     createWidget();
-    if (CONFIG.showOnLoad && !state.isOpen) setTimeout(() => { if (!state.isOpen) openChat(); }, CONFIG.delayBeforeOpen);
+    if (CONFIG.showOnLoad && !state.isOpen && !state.dismissed) {
+      setTimeout(() => {
+        if (!state.isOpen && !state.dismissed) openChat();
+      }, CONFIG.delayBeforeOpen);
+    }
   }
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
