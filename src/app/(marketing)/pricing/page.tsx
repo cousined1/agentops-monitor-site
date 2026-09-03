@@ -1,4 +1,5 @@
-import type { Metadata } from "next";
+﻿import type { Metadata } from "next";
+import SubscribeButton from "./SubscribeButton";
 
 export const metadata: Metadata = {
   title: "Pricing",
@@ -38,6 +39,7 @@ export default function PricingPage() {
             <p>500,000 runs</p>
             <p>Cost governance, alerts</p>
             <p>Slack support</p>
+            <p><SubscribeButton plan="team" label="Subscribe to Team" /></p>
           </article>
           <article className="card">
             <p className="card-label">Enterprise</p>
@@ -85,3 +87,4 @@ export default function PricingPage() {
     </main>
   );
 }
+

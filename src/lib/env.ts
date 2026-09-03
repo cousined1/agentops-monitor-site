@@ -1,4 +1,4 @@
-import { z } from "zod";
+﻿import { z } from "zod";
 
 const EnvSchema = z.object({
   NEXT_PUBLIC_INSFORGE_URL: z.string().url(),
@@ -6,6 +6,7 @@ const EnvSchema = z.object({
   INSFORGE_API_KEY: z.string().min(20),
   INGEST_RATE_LIMIT_PER_MIN: z.coerce.number().int().positive().default(600),
   STRIPE_WEBHOOK_SECRET: z.string().min(1).optional(),
+  STRIPE_SECRET_KEY: z.string().min(1).optional(),
 });
 
 export type AppEnv = z.infer<typeof EnvSchema>;
