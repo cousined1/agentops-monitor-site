@@ -10,6 +10,8 @@ export const metadata: Metadata = {
   alternates: { canonical: "/app/api-keys" },
 };
 
+export const dynamic = "force-dynamic";
+
 export default async function ApiKeysPage() {
   const insforge = await getServerClient();
   const { data: keys } = await insforge.database
@@ -76,7 +78,7 @@ export default async function ApiKeysPage() {
                   <td>
                     {key.last_used_at
                       ? new Date(key.last_used_at).toLocaleString()
-                      : "—"}
+                      : "-"}
                   </td>
                   <td>
                     {key.is_active ? (

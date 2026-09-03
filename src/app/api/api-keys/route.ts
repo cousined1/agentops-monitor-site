@@ -24,12 +24,14 @@ export async function POST(request: NextRequest) {
     apiKey: env.INSFORGE_API_KEY,
   });
 
-  const { error } = await admin.database.from("api_keys").insert({
-    user_id: user.id,
-    name,
-    key_prefix: generated.prefix,
-    key_hash: generated.hash,
-  });
+  const { error } = await admin.database.from("api_keys").insert([
+    {
+      user_id: user.id,
+      name,
+      key_prefix: generated.prefix,
+      key_hash: generated.hash,
+    },
+  ]);
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });

@@ -25,7 +25,7 @@ export default function FeaturesPage() {
       <section>
         <h2>Trace every tool call and LLM decision</h2>
         <p>
-          Every run becomes a replayable timeline — model output, tool calls, latencies, errors. Click any span to see the prompt, the model output, and what the agent changed in the world.
+          Every run becomes a replayable timeline: model output, tool calls, latencies, errors. Click any span to see the prompt, the model output, and what the agent changed in the world.
         </p>
         <pre className="install"><code>+0 ms      refund-triage-v3 start
 +12 ms     llm openai.chat        8,204 tok
@@ -47,7 +47,7 @@ export default function FeaturesPage() {
       <section>
         <h2>Cap the spend with hard budget limits</h2>
         <p>
-          Set caps at the workflow, the agent, or the user. A run stops at the limit you set — not at the limit your CFO finds out about.
+          Set caps at the workflow, the agent, or the user. A run stops at the limit you set, not at the limit your CFO finds out about.
         </p>
         <pre className="install"><code>refund.cap_per_run_usd: 50
 require_approval_above: 250

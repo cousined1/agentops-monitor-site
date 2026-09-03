@@ -68,10 +68,10 @@ export default function PricingPage() {
           <tbody>
             <tr><td>Runs / month</td><td>10K</td><td>500K</td><td>Custom</td></tr>
             <tr><td>Tracing</td><td>Basic</td><td>Full</td><td>Full</td></tr>
-            <tr><td>Cost governance</td><td>—</td><td>Yes</td><td>Yes</td></tr>
-            <tr><td>Alerts</td><td>—</td><td>Yes</td><td>Yes</td></tr>
-            <tr><td>SSO</td><td>—</td><td>—</td><td>Yes</td></tr>
-            <tr><td>Audit export</td><td>—</td><td>—</td><td>Yes</td></tr>
+            <tr><td>Cost governance</td><td>-</td><td>Yes</td><td>Yes</td></tr>
+            <tr><td>Alerts</td><td>-</td><td>Yes</td><td>Yes</td></tr>
+            <tr><td>SSO</td><td>-</td><td>-</td><td>Yes</td></tr>
+            <tr><td>Audit export</td><td>-</td><td>-</td><td>Yes</td></tr>
             <tr><td>Support</td><td>Community</td><td>Slack</td><td>Named</td></tr>
             <tr><td>Price</td><td>$0</td><td>$299</td><td>from $2,000</td></tr>
           </tbody>

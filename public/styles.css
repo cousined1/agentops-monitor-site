@@ -742,3 +742,14 @@ body {
 .cta-primary {
   color: #ffffff;
 }
+.cta-primary:hover {
+  background: #12572e;
+  border-color: #12572e;
+}
+
+@media (max-width: 480px) {
+  .brand-meta {
+    display: none;
+  }
+}
+

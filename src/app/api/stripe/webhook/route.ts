@@ -65,7 +65,7 @@ export async function POST(request: NextRequest) {
     `[stripe-webhook] ${handled ? "handled" : "unhandled"} ${event.type} (id=${event.id})`,
   );
 
-  // TODO(billing): add business logic here per event type — e.g.
+  // TODO(billing): add business logic here per event type: e.g.
   //   invoice.paid          -> provision/refresh access
   //   invoice.payment_failed-> trigger dunning / alert
   //   customer.subscription.updated -> sync tier in DB

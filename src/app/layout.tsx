@@ -34,6 +34,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           `}
         </Script>
         <Script src="/cookie-consent.js" strategy="afterInteractive" />
+        <Script src="/aom-chatbot.js" strategy="lazyOnload" />
         <Analytics />
         {children}
         <Footer />

@@ -9,6 +9,8 @@ export const metadata: Metadata = {
   alternates: { canonical: "/app" },
 };
 
+export const dynamic = "force-dynamic";
+
 export default async function DashboardPage() {
   const insforge = await getServerClient();
   const { data: runs } = await insforge.database
@@ -72,7 +74,7 @@ export default async function DashboardPage() {
                   </td>
                   <td>{run.agent_name}</td>
                   <td>{run.status}</td>
-                  <td>{new Date(run.started_at).toLocaleString()}</td>
+                  <td>{run.started_at ? new Date(run.started_at).toLocaleString() : "-"}</td>
                   <td className="num">
                     {run.tokens_in + run.tokens_out}
                   </td>
@@ -107,7 +109,7 @@ export default async function DashboardPage() {
                   <td>
                     {key.last_used_at
                       ? new Date(key.last_used_at).toLocaleString()
-                      : "—"}
+                      : "-"}
                   </td>
                 </tr>
               ))}

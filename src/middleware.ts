@@ -30,6 +30,7 @@ const PUBLIC_PATHS = new Set([
   "/api/auth/sign-out",
   "/api/ingest",
   "/api/stripe/webhook",
+  "/api/leads",
 ]);
 
 export async function middleware(request: NextRequest) {

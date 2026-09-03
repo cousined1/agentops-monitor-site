@@ -9,6 +9,8 @@ export const metadata: Metadata = {
   alternates: { canonical: "/app/profile" },
 };
 
+export const dynamic = "force-dynamic";
+
 export default async function ProfilePage() {
   const insforge = await getServerClient();
   const { data: userData } = await insforge.auth.getCurrentUser();
@@ -42,11 +44,11 @@ export default async function ProfilePage() {
           </div>
           <div>
             <dt>Full name</dt>
-            <dd>{profile?.full_name ?? "—"}</dd>
+            <dd>{profile?.full_name ?? "-"}</dd>
           </div>
           <div>
             <dt>Company</dt>
-            <dd>{profile?.company ?? "—"}</dd>
+            <dd>{profile?.company ?? "-"}</dd>
           </div>
           <div>
             <dt>Joined</dt>

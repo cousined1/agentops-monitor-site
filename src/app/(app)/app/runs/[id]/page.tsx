@@ -3,6 +3,8 @@ import { notFound } from "next/navigation";
 import { getServerClient } from "@/lib/insforge";
 import { Breadcrumbs } from "@/components/breadcrumbs";
 
+export const dynamic = "force-dynamic";
+
 export async function generateMetadata(
   { params }: { params: Promise<{ id: string }> }
 ): Promise<Metadata> {
@@ -49,7 +51,7 @@ export default async function RunDetailPage({ params }: { params: Promise<{ id: 
       <section className="cards">
         <article className="card">
           <p className="card-label">Duration</p>
-          <p className="card-value">{run.duration_ms ?? "—"} ms</p>
+          <p className="card-value">{run.duration_ms ?? "-"} ms</p>
         </article>
         <article className="card">
           <p className="card-label">Spans</p>
@@ -71,12 +73,12 @@ export default async function RunDetailPage({ params }: { params: Promise<{ id: 
           <ol className="trace-spans">
             {spans.map((span) => (
               <li key={span.id} className="span">
-                <span className="time">{new Date(span.started_at).toLocaleTimeString()}</span>
+                <span className="time">{span.started_at ? new Date(span.started_at).toLocaleTimeString() : "-"}</span>
                 <span className="agent">{span.span_type}</span>
                 <span className="tool">
-                  {span.tool_name ?? span.model ?? span.provider ?? "—"} ·{" "}
+                  {span.tool_name ?? span.model ?? span.provider ?? "-"} ·{" "}
                   {span.status} ·{" "}
-                  {span.duration_ms ?? "—"} ms ·{" "}
+                  {span.duration_ms ?? "-"} ms ·{" "}
                   ${span.cost_usd}
                 </span>
               </li>
