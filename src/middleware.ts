@@ -50,7 +50,7 @@ export async function middleware(request: NextRequest) {
   }
   const accessToken = session?.accessToken ?? null;
 
-  if (PUBLIC_PATHS.has(pathname)) return response;
+  if (PUBLIC_PATHS.has(pathname) || pathname.startsWith("/blog/")) return response;
 
   if (!accessToken) {
     const url = request.nextUrl.clone();
