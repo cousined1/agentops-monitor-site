@@ -32,6 +32,11 @@
     }
   }
 
+  const initialConsent = readConsent();
+  if (initialConsent?.categories) {
+    window.__aomConsent = initialConsent.categories;
+  }
+
   function updateConsentMode(categories) {
     window.gtag?.("consent", "update", {
       analytics_storage: categories.analytics ? "granted" : "denied",
@@ -65,6 +70,7 @@
     } catch {}
 
     updateConsentMode(normalized);
+    window.__aomConsent = normalized;
     window.dispatchEvent(new CustomEvent("aom:consent-updated", { detail: record }));
     return record;
   }
@@ -197,6 +203,16 @@
       banner.hidden = false;
     }
   }
+
+  window.AOMCookieConsent = {
+    getConsent: readConsent,
+    openPreferences: () => {
+      const dialog = document.getElementById("consent-dialog");
+      if (dialog && typeof dialog.showModal === "function") {
+        dialog.showModal();
+      }
+    },
+  };
 
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", init, { once: true });

@@ -4,6 +4,18 @@ import { readFile } from "node:fs/promises";
 vi.mock("@insforge/sdk/ssr/middleware", () => ({
   updateSession: vi.fn(async () => null),
 }));
+vi.mock("next/headers", () => ({
+  cookies: vi.fn(async () => ({
+    get: vi.fn(),
+    set: vi.fn(),
+    delete: vi.fn(),
+  })),
+}));
+vi.mock("@insforge/sdk/ssr", () => ({
+  createAuthActions: vi.fn(() => ({
+    signOut: vi.fn(async () => ({ error: null })),
+  })),
+}));
 
 describe("backend security boundaries", () => {
   const originalSha = process.env.RAILWAY_GIT_COMMIT_SHA;
@@ -103,5 +115,52 @@ describe("backend security boundaries", () => {
     if (verificationRequired) {
       expect(smtpEnabled).toBe(true);
     }
+
+  });
+
+  it("allows chatbot lead capture requests to reach /api/leads without redirect", async () => {
+    const { middleware } = await import("../src/middleware.ts");
+    const { NextRequest } = await import("next/server");
+    const request = new NextRequest("https://app.example/api/leads", {
+      method: "POST",
+    });
+
+    const response = await middleware(request);
+
+    expect(response.headers.get("location")).toBeNull();
+  });
+
+  it("handles lead capture POST and OPTIONS at /api/leads", async () => {
+    const { POST, OPTIONS } = await import("../src/app/api/leads/route.ts");
+    const { NextRequest } = await import("next/server");
+
+    const postReq = new NextRequest("https://app.example/api/leads", {
+      method: "POST",
+      body: JSON.stringify({ email: "lead@example.com", company: "Acme Corp" }),
+    });
+
+    const postRes = await POST(postReq);
+    expect(postRes.status).toBe(200);
+    await expect(postRes.json()).resolves.toEqual({ status: "ok" });
+
+    const optionsRes = await OPTIONS();
+    expect(optionsRes.status).toBe(204);
+    expect(optionsRes.headers.get("access-control-allow-methods")).toContain("POST");
+  });
+
+  it("redirects sign-out requests to the origin login URL", async () => {
+    process.env.NEXT_PUBLIC_INSFORGE_URL = "https://backend.example";
+    process.env.NEXT_PUBLIC_INSFORGE_ANON_KEY = "anon-key-with-at-least-twenty-characters";
+    process.env.INSFORGE_API_KEY = "admin-key-with-at-least-twenty-characters";
+
+    const { POST } = await import("../src/app/api/auth/sign-out/route.ts");
+    const { NextRequest } = await import("next/server");
+    const request = new NextRequest("https://agentopsmonitor.com/api/auth/sign-out", {
+      method: "POST",
+    });
+
+    const response = await POST(request);
+
+    expect(response.headers.get("location")).toBe("https://agentopsmonitor.com/login");
   });
 });

@@ -50,7 +50,7 @@ export default function IntegrationsPage() {
           <li>Payments: Stripe (refunds, charges, holds)</li>
           <li>Messaging: Slack, email</li>
           <li>Vector stores: query, upsert</li>
-          <li>Anything your agent calls — generic capture</li>
+          <li>Anything your agent calls: generic capture</li>
         </ul>
       </section>
 
