@@ -84,4 +84,27 @@ describe("ingest transaction boundary", () => {
       error: { code: "rate_limited" },
     });
   });
+
+  it("rejects oversized request bodies with 413 before touching the backend", async () => {
+    const response = await POST(
+      new Request("https://app.example/api/ingest", {
+        method: "POST",
+        headers: {
+          authorization: "Bearer aom_live_test_secret",
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({
+          external_id: "run-too-big",
+          agent_name: "size-probe",
+          metadata: { blob: "x".repeat(1_100_000) },
+        }),
+      }),
+    );
+
+    expect(response.status).toBe(413);
+    await expect(response.json()).resolves.toMatchObject({
+      error: { code: "payload_too_large" },
+    });
+    expect(rpc).not.toHaveBeenCalled();
+  });
 });

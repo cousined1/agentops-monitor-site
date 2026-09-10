@@ -89,6 +89,35 @@ describe("backend security boundaries", () => {
     expect(config).toMatch(/\[auth\.password\][\s\S]*min_length = 10(?:\r?\n|$)/);
   });
 
+  it("never requires email verification while SMTP delivery is disabled (AUTHZ-001)", async () => {
+    const config = await readFile(new URL("../insforge.toml", import.meta.url), "utf8");
+
+    let section = "";
+    let verificationRequired = false;
+    let smtpEnabled = false;
+    for (const line of config.split(/\r?\n/)) {
+      const heading = line.match(/^\[(.+)\]\s*$/);
+      if (heading) {
+        section = heading[1];
+        continue;
+      }
+      if (section === "auth" && /^require_email_verification\s*=\s*true\s*$/.test(line)) {
+        verificationRequired = true;
+      }
+      if (section === "auth.smtp" && /^enabled\s*=\s*true\s*$/.test(line)) {
+        smtpEnabled = true;
+      }
+    }
+
+    // 6-digit verification codes are undeliverable with SMTP off; requiring
+    // verification then dead-ends every signup at the OTP step (AUTHZ-001).
+    // Re-enable both together or neither.
+    if (verificationRequired) {
+      expect(smtpEnabled).toBe(true);
+    }
+
+  });
+
   it("allows chatbot lead capture requests to reach /api/leads without redirect", async () => {
     const { middleware } = await import("../src/middleware.ts");
     const { NextRequest } = await import("next/server");

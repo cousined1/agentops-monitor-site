@@ -1,6 +1,10 @@
 [auth]
 allowed_redirect_urls = []
-require_email_verification = true
+# AUTHZ-001 (audit 2026-09): temporarily disabled - [auth.smtp] is disabled, so
+# 6-digit verification codes are undeliverable and mandatory verification
+# dead-ends every signup. Re-enable require_email_verification ONLY together
+# with [auth.smtp] enabled = true; the CI invariant test enforces this pairing.
+require_email_verification = false
 verify_email_method = "code"
 reset_password_method = "code"
 disable_signup = false
