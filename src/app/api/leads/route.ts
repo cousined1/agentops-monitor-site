@@ -91,9 +91,7 @@ export async function POST(request: NextRequest) {
   return NextResponse.json({ status: "ok" });
 }
 
-export async function OPTIONS(
-  request: NextRequest | Request = new Request("http://localhost:3000/api/leads"),
-) {
+export async function OPTIONS(request: NextRequest | Request) {
   // Same-origin chatbot needs no CORS; scope any cross-origin preflight to
   // our own origins instead of reflecting a wildcard.
   const headers: Record<string, string> = {
