@@ -105,6 +105,35 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  // DELTA-005: at-least-once with dedup. Verified events are recorded in
+  // billing_processed_events (migrations/20260911000000); a repeat delivery
+  // short-circuits. Handlers remain idempotent state-writes, so the tiny
+  // race between two concurrent duplicate deliveries is benign.
+  const dedupAdmin = getAdmin();
+  let duplicate = false;
+  {
+    const { data: seen, error: seenError } = await dedupAdmin.database
+      .from("billing_processed_events")
+      .select("event_id")
+      .eq("event_id", event.id)
+      .maybeSingle();
+    if (seenError) {
+      // Fail open: handlers are idempotent, so reprocessing is safe.
+      console.error(`[stripe-webhook] dedup lookup failed for ${event.id}: ${seenError.message}`);
+    } else if (seen) {
+      duplicate = true;
+    }
+  }
+  if (duplicate) {
+    console.log(`[stripe-webhook] duplicate ${event.type} (id=${event.id}); skipping`);
+    return NextResponse.json({
+      received: true,
+      type: event.type,
+      handled: HANDLED_EVENTS.has(event.type),
+      duplicate: true,
+    });
+  }
+
   const handled = HANDLED_EVENTS.has(event.type);
 
   try {
@@ -169,17 +198,30 @@ export async function POST(request: NextRequest) {
         break;
     }
   } catch (err) {
-    // Log but still 200 on DB hiccups we want Stripe to consider delivered;
-    // a non-2xx would trigger retries that double-apply the same state.
+    // DELTA-005: with dedup in place, a failed handler must 500 so Stripe
+    // retries; the processed-events check prevents double-apply on retry.
+    // Silently 200-ing here would drop the event permanently.
     const message = err instanceof Error ? err.message : String(err);
-    console.error(`[stripe-webhook] handler error for ${event.type}: ${message}`);
-    return NextResponse.json({ received: true, type: event.type, handled, warning: message });
+    console.error(`[stripe-webhook] handler error for ${event.type} (id=${event.id}): ${message}`);
+    return NextResponse.json(
+      { error: { message: "Webhook handler failed; the event will be retried.", code: "webhook_handler_failed" } },
+      { status: 500 },
+    );
+  }
+
+  const { error: recordError } = await dedupAdmin.database
+    .from("billing_processed_events")
+    .insert({ event_id: event.id, event_type: event.type });
+  if (recordError && (recordError as { code?: string }).code !== "23505") {
+    // Non-fatal: the handlers are idempotent, so a missed ledger row only
+    // means a retried delivery would reprocess the same state.
+    console.error(`[stripe-webhook] failed to record ${event.id}: ${JSON.stringify(recordError)}`);
   }
 
   console.log(
     `[stripe-webhook] ${handled ? "handled" : "unhandled"} ${event.type} (id=${event.id})`,
   );
-  return NextResponse.json({ received: true, type: event.type, handled });
+  return NextResponse.json({ received: true, type: event.type, handled, duplicate: false });
 }
 
 // Stripe sends a GET when you configure a destination from the Dashboard

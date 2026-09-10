@@ -143,7 +143,7 @@ describe("backend security boundaries", () => {
     expect(postRes.status).toBe(200);
     await expect(postRes.json()).resolves.toEqual({ status: "ok" });
 
-    const optionsRes = await OPTIONS();
+    const optionsRes = await OPTIONS(new Request("https://app.example/api/leads"));
     expect(optionsRes.status).toBe(204);
     expect(optionsRes.headers.get("access-control-allow-methods")).toContain("POST");
   });
