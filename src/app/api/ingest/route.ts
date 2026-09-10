@@ -57,6 +57,19 @@ const IngestResultSchema = z.discriminatedUnion("ok", [
   }),
 ]);
 
+// P0 hardening (API-B-01/PERF-003): bound ingest payload sizes.
+// App Router route handlers have no default body limit, so the limit is ours.
+const MAX_BODY_BYTES = 1_000_000;   // 1 MB total request body
+const MAX_SPAN_JSON_BYTES = 65_536; // 64 KB per span across input+output+error+metadata
+const MAX_RUN_JSON_BYTES = 65_536;  // 64 KB for run-level metadata
+
+function jsonBytes(value: unknown): number {
+  try {
+    return Buffer.byteLength(JSON.stringify(value) ?? "", "utf8");
+  } catch {
+    return Number.MAX_SAFE_INTEGER; // unserializable => treat as oversized
+  }
+}
 function error(status: number, message: string, code: string) {
   return NextResponse.json({ error: { message, code } }, { status });
 }
@@ -77,13 +90,40 @@ export async function POST(request: NextRequest) {
     apiKey: env.INSFORGE_API_KEY,
   });
 
+  const rawBody = await request.text();
+  if (Buffer.byteLength(rawBody, "utf8") > MAX_BODY_BYTES) {
+    return error(413, "Request body exceeds the size limit.", "payload_too_large");
+  }
+
+  let rawJson: unknown;
+  try {
+    rawJson = JSON.parse(rawBody);
+  } catch {
+    return error(400, "Request body is not valid JSON.", "invalid_json");
+  }
+
   let payload: z.infer<typeof IngestSchema>;
   try {
-    payload = IngestSchema.parse(await request.json());
+    payload = IngestSchema.parse(rawJson);
   } catch (parseError) {
     const message =
       parseError instanceof Error ? parseError.message : "Invalid request payload.";
     return error(400, message, "invalid_payload");
+  }
+
+  if (jsonBytes(payload.metadata) > MAX_RUN_JSON_BYTES) {
+    return error(413, "Run metadata exceeds the size limit.", "payload_too_large");
+  }
+  const oversizedSpan = payload.spans.some(
+    (span) =>
+      jsonBytes(span.input) +
+        jsonBytes(span.output) +
+        jsonBytes(span.error ?? {}) +
+        jsonBytes(span.metadata) >
+      MAX_SPAN_JSON_BYTES,
+  );
+  if (oversizedSpan) {
+    return error(413, "Span payload exceeds the size limit.", "payload_too_large");
   }
 
   const { data: rpcData, error: rpcError } = await admin.database.rpc(
