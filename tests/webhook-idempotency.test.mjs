@@ -52,7 +52,7 @@ describe("stripe webhook idempotency (DELTA-005)", () => {
             }),
           }),
           insert: async (rows) => {
-            processed.add(rows.event_id);
+            for (const row of rows) processed.add(row.event_id);
             return { error: null };
           },
         })),
