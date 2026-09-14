@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerClient } from "@/lib/insforge";
+import { appEnv } from "@/lib/env";
 import { BillingConfigError, getProfileByUserId, getStripe } from "@/lib/billing";
 
 export const runtime = "nodejs";
@@ -11,6 +12,8 @@ export async function POST(request: NextRequest) {
   const user = userData?.user;
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
+  const env = appEnv();
+
   try {
     const stripe = getStripe();
     const profile = await getProfileByUserId(user.id);
@@ -20,7 +23,7 @@ export async function POST(request: NextRequest) {
         { status: 400 },
       );
     }
-    const origin = new URL(request.url).origin;
+    const origin = (env.NEXT_PUBLIC_SITE_URL ?? new URL(request.url).origin).replace(/\/+$/, "");
     const portal = await stripe.billingPortal.sessions.create({
       customer: profile.stripe_customer_id,
       return_url: `${origin}/billing`,

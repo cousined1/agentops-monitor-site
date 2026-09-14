@@ -6,7 +6,6 @@ import {
   getPlanByName,
   getProfileByUserId,
   getStripe,
-  getAdmin,
 } from "@/lib/billing";
 
 export const runtime = "nodejs";
@@ -54,7 +53,7 @@ export async function POST(request: NextRequest) {
 
     const profile = await getProfileByUserId(user.id);
 
-    const origin = new URL(request.url).origin;
+    const origin = (env.NEXT_PUBLIC_SITE_URL ?? new URL(request.url).origin).replace(/\/+$/, "");
     const session = await stripe.checkout.sessions.create({
       mode: "subscription",
       line_items: [{ price: plan.stripe_price_id, quantity: 1 }],
@@ -75,7 +74,6 @@ export async function POST(request: NextRequest) {
         { status: 502 },
       );
     }
-    void env;
   } catch (err) {
     if (err instanceof BillingConfigError) {
       return NextResponse.json(
@@ -87,6 +85,5 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: { message, code: "checkout_failed" } }, { status: 500 });
   }
 
-  void getAdmin;
   return NextResponse.json({ url: session_url });
 }

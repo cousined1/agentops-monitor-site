@@ -43,6 +43,10 @@ export async function POST(request: NextRequest) {
 
 export async function PATCH(request: NextRequest) {
   const insforge = await getServerClient();
+  const { data: userData } = await insforge.auth.getCurrentUser();
+  const user = userData?.user;
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
   const body = (await request.json()) as { id?: string; is_active?: boolean };
   if (!body.id || typeof body.is_active !== "boolean") {
     return NextResponse.json({ error: "Invalid body" }, { status: 400 });
@@ -50,16 +54,25 @@ export async function PATCH(request: NextRequest) {
   const { error } = await insforge.database
     .from("api_keys")
     .update({ is_active: body.is_active })
-    .eq("id", body.id);
+    .eq("id", body.id)
+    .eq("user_id", user.id);
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json({ ok: true });
 }
 
 export async function DELETE(request: NextRequest) {
   const insforge = await getServerClient();
+  const { data: userData } = await insforge.auth.getCurrentUser();
+  const user = userData?.user;
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
   const body = (await request.json()) as { id?: string };
   if (!body.id) return NextResponse.json({ error: "Missing id" }, { status: 400 });
-  const { error } = await insforge.database.from("api_keys").delete().eq("id", body.id);
+  const { error } = await insforge.database
+    .from("api_keys")
+    .delete()
+    .eq("id", body.id)
+    .eq("user_id", user.id);
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json({ ok: true });
 }

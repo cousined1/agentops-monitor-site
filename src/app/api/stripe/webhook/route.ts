@@ -64,7 +64,7 @@ async function applySubscriptionState(params: {
 
   await updateProfileBilling(userId, {
     stripe_customer_id: params.customerId,
-    current_plan_name: params.status === "active" ? planName : params.status === "past_due" ? planName : planName,
+    current_plan_name: planName,
     subscription_status: params.status,
     current_period_end: params.periodEndIso,
   });
@@ -211,7 +211,7 @@ export async function POST(request: NextRequest) {
 
   const { error: recordError } = await dedupAdmin.database
     .from("billing_processed_events")
-    .insert({ event_id: event.id, event_type: event.type });
+    .insert([{ event_id: event.id, event_type: event.type }]);
   if (recordError && (recordError as { code?: string }).code !== "23505") {
     // Non-fatal: the handlers are idempotent, so a missed ledger row only
     // means a retried delivery would reprocess the same state.
