@@ -175,13 +175,17 @@ export async function POST(request: NextRequest) {
             typeof session.subscription === "string" ? session.subscription : session.subscription.id,
           );
           const priceId = sub.items.data[0]?.price?.id ?? null;
+          const periodEnd =
+            (sub as unknown as { current_period_end?: number | null }).current_period_end ??
+            sub.items.data[0]?.current_period_end ??
+            null;
           await applySubscriptionState({
             userId: (session.metadata?.userId as string) ?? session.client_reference_id,
             customerId:
               typeof session.customer === "string" ? session.customer : session.customer?.id ?? "",
             priceId,
             status: sub.status,
-            periodEndIso: periodEndToIso(sub.items.data[0]?.current_period_end ?? null),
+            periodEndIso: periodEndToIso(periodEnd),
           });
         }
         break;
@@ -190,12 +194,16 @@ export async function POST(request: NextRequest) {
       case "customer.subscription.updated": {
         const sub = event.data.object as Stripe.Subscription;
         const priceId = sub.items.data[0]?.price?.id ?? null;
+        const periodEnd =
+          (sub as unknown as { current_period_end?: number | null }).current_period_end ??
+          sub.items.data[0]?.current_period_end ??
+          null;
         await applySubscriptionState({
           userId: (sub.metadata?.userId as string) ?? null,
           customerId: typeof sub.customer === "string" ? sub.customer : sub.customer.id,
           priceId,
           status: sub.status,
-          periodEndIso: periodEndToIso(sub.items.data[0]?.current_period_end ?? null),
+          periodEndIso: periodEndToIso(periodEnd),
         });
         break;
       }
