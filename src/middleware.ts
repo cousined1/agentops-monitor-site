@@ -18,6 +18,8 @@ const PUBLIC_PATHS = new Set([
   "/cookie-policy.html",
   "/robots.txt",
   "/sitemap.xml",
+  "/llms.txt",
+  "/llms-full.txt",
   "/og-image.svg",
   "/styles.css",
   "/index.html",
