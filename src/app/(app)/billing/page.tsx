@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { getServerClient } from "@/lib/insforge";
+import { getSessionUser } from "@/lib/insforge";
 import { getProfileByUserId } from "@/lib/billing";
 import { Breadcrumbs } from "@/components/breadcrumbs";
 import PortalButton from "./PortalButton";
@@ -24,12 +24,35 @@ function formatDate(value: string | null): string {
 }
 
 export default async function BillingPage() {
-  const insforge = await getServerClient();
-  const { data: userData } = await insforge.auth.getCurrentUser();
-  const user = userData?.user;
+  const user = await getSessionUser();
   if (!user) redirect("/login?next=/billing");
 
-  const profile = await getProfileByUserId(user.id);
+  // REL-R01: a failed profile read must render an error, not hard-500.
+  let profile = null;
+  try {
+    profile = await getProfileByUserId(user.id);
+  } catch (error) {
+    console.error("[billing] profile lookup failed:", error instanceof Error ? error.message : error);
+    return (
+      <>
+        <Breadcrumbs
+          items={[
+            { label: "Dashboard", href: "/app" },
+            { label: "Billing" },
+          ]}
+        />
+        <section>
+          <h1>Billing</h1>
+          <p className="auth-error">
+            Could not load your billing profile. Please try again shortly.
+          </p>
+          <p>
+            <Link href="/app">Back to dashboard</Link>
+          </p>
+        </section>
+      </>
+    );
+  }
 
   return (
     <>

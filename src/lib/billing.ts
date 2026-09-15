@@ -49,7 +49,34 @@ export async function getPlanByName(name: string): Promise<PlanRow | null> {
   return (rows[0] as PlanRow) ?? null;
 }
 
+/**
+ * Resolve the Stripe price for a plan. STRIPE_<PLAN>_PRICE_ID env vars win
+ * over the plans table row so a price rotation is an env change, not a
+ * migration (QA P0-2: a stale test-mode price ID broke live checkout).
+ */
+export async function getPlanPriceId(plan: PlanRow): Promise<string | null> {
+  const env = appEnv();
+  const override =
+    plan.name === "team"
+      ? env.STRIPE_TEAM_PRICE_ID
+      : plan.name === "enterprise"
+        ? env.STRIPE_ENTERPRISE_PRICE_ID
+        : undefined;
+  return override ?? plan.stripe_price_id ?? null;
+}
+
 export async function getPlanByPriceId(priceId: string): Promise<PlanRow | null> {
+  const env = appEnv();
+  // API-005: the webhook resolves plan names from Stripe price IDs. If the
+  // deployed price is provided by an env override, the plans-table lookup
+  // alone would miss it and sync a blank plan after a rotation — so the env
+  // mapping is checked first, mirroring getPlanPriceId().
+  if (env.STRIPE_TEAM_PRICE_ID && priceId === env.STRIPE_TEAM_PRICE_ID) {
+    return getPlanByName("team");
+  }
+  if (env.STRIPE_ENTERPRISE_PRICE_ID && priceId === env.STRIPE_ENTERPRISE_PRICE_ID) {
+    return getPlanByName("enterprise");
+  }
   const admin = getAdmin();
   const { data, error } = await admin.database
     .from("plans")

@@ -18,10 +18,13 @@ const SpanSchema = z.object({
     .enum(["ok", "error", "held", "blocked", "retried"])
     .default("ok"),
   started_at: z.string().datetime().optional(),
-  duration_ms: z.number().int().nonnegative().nullable().optional(),
-  tokens_in: z.number().int().nonnegative().default(0),
-  tokens_out: z.number().int().nonnegative().default(0),
-  cost_usd: z.number().nonnegative().default(0),
+  // Bounds match the SQL column types (API-002): duration_ms is int4, cost is
+  // numeric(12,4). Without these caps a valid key can trigger a raw Postgres
+  // overflow error through the RPC.
+  duration_ms: z.number().int().nonnegative().nullable().optional().refine((v) => v === null || v === undefined || v <= 2_147_483_647, "duration_ms too large"),
+  tokens_in: z.number().int().nonnegative().max(1_000_000_000_000).default(0),
+  tokens_out: z.number().int().nonnegative().max(1_000_000_000_000).default(0),
+  cost_usd: z.number().nonnegative().max(9_999_999_999).default(0),
   input: z.object({}).passthrough().default({}),
   output: z.object({}).passthrough().default({}),
   error: z.object({}).passthrough().nullable().optional(),
@@ -36,10 +39,10 @@ const IngestSchema = z.object({
     .default("completed"),
   started_at: z.string().datetime().optional(),
   ended_at: z.string().datetime().nullable().optional(),
-  duration_ms: z.number().int().nonnegative().nullable().optional(),
-  tokens_in: z.number().int().nonnegative().default(0),
-  tokens_out: z.number().int().nonnegative().default(0),
-  cost_usd: z.number().nonnegative().default(0),
+  duration_ms: z.number().int().nonnegative().nullable().optional().refine((v) => v === null || v === undefined || v <= 2_147_483_647, "duration_ms too large"),
+  tokens_in: z.number().int().nonnegative().max(1_000_000_000_000).default(0),
+  tokens_out: z.number().int().nonnegative().max(1_000_000_000_000).default(0),
+  cost_usd: z.number().nonnegative().max(9_999_999_999).default(0),
   metadata: z.object({}).passthrough().default({}),
   spans: z.array(SpanSchema).max(1000).default([]),
 });
@@ -90,6 +93,12 @@ export async function POST(request: NextRequest) {
     apiKey: env.INSFORGE_API_KEY,
   });
 
+  // API-003: reject oversized uploads from Content-Length before buffering.
+  const declaredLength = Number(request.headers.get("content-length") ?? "0");
+  if (declaredLength > MAX_BODY_BYTES) {
+    return error(413, "Request body exceeds the size limit.", "payload_too_large");
+  }
+
   const rawBody = await request.text();
   if (Buffer.byteLength(rawBody, "utf8") > MAX_BODY_BYTES) {
     return error(413, "Request body exceeds the size limit.", "payload_too_large");
@@ -106,9 +115,12 @@ export async function POST(request: NextRequest) {
   try {
     payload = IngestSchema.parse(rawJson);
   } catch (parseError) {
-    const message =
-      parseError instanceof Error ? parseError.message : "Invalid request payload.";
-    return error(400, message, "invalid_payload");
+    // API-R01: the zod issue list leaks the schema shape; keep details in logs.
+    console.error(
+      "[ingest] payload validation failed:",
+      parseError instanceof Error ? parseError.message : parseError,
+    );
+    return error(400, "Invalid request payload.", "invalid_payload");
   }
 
   if (jsonBytes(payload.metadata) > MAX_RUN_JSON_BYTES) {
@@ -135,7 +147,9 @@ export async function POST(request: NextRequest) {
     },
   );
   if (rpcError) {
-    return error(500, rpcError.message, "ingest_transaction_failed");
+    // API-002/AUTHN-R01: raw Postgres error text must not reach the client.
+    console.error("[ingest] RPC failed:", rpcError.message);
+    return error(500, "Ingest failed. Please retry.", "ingest_transaction_failed");
   }
 
   const result = IngestResultSchema.safeParse(rpcData);

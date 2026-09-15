@@ -53,6 +53,14 @@ export async function middleware(request: NextRequest) {
   if (PUBLIC_PATHS.has(pathname) || pathname.startsWith("/blog/")) return response;
 
   if (!accessToken) {
+    // REL-008: API consumers can't follow HTML redirects — return a JSON 401
+    // so client-side 401 handling (SubscribeButton, PortalButton) works.
+    if (pathname.startsWith("/api/")) {
+      return NextResponse.json(
+        { error: "Unauthorized" },
+        { status: 401 },
+      );
+    }
     const url = request.nextUrl.clone();
     url.pathname = "/login";
     url.search = "";

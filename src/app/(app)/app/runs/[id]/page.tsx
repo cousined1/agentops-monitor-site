@@ -15,22 +15,33 @@ export async function generateMetadata(
   };
 }
 
+const MAX_SPANS_RENDERED = 500;
+
 export default async function RunDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const insforge = await getServerClient();
-  const { data: run } = await insforge.database
-    .from("runs")
-    .select("id,external_id,agent_name,status,started_at,ended_at,duration_ms,tokens_in,tokens_out,cost_usd,metadata")
-    .eq("id", id)
-    .maybeSingle();
+  // PERF-R02: run + spans are independent reads — fetch concurrently.
+  const [runResult, spansResult] = await Promise.all([
+    insforge.database
+      .from("runs")
+      .select("id,external_id,agent_name,status,started_at,ended_at,duration_ms,tokens_in,tokens_out,cost_usd,span_count")
+      .eq("id", id)
+      .maybeSingle(),
+    // PERF-001: never fetch all spans with heavy payload columns; the trace
+    // UI renders a bounded window of the summary columns only.
+    insforge.database
+      .from("spans")
+      .select("id,span_type,provider,model,tool_name,status,started_at,duration_ms,cost_usd")
+      .eq("run_id", id)
+      .order("started_at", { ascending: true })
+      .limit(MAX_SPANS_RENDERED),
+  ]);
+
+  const run = runResult.data;
+  const spans = spansResult.data;
+  const spansTruncated = spans !== null && spans.length === MAX_SPANS_RENDERED;
 
   if (!run) notFound();
-
-  const { data: spans } = await insforge.database
-    .from("spans")
-    .select("id,span_type,provider,model,tool_name,status,started_at,duration_ms,tokens_in,tokens_out,cost_usd,input,output,error")
-    .eq("run_id", id)
-    .order("started_at", { ascending: true });
 
   return (
     <>
@@ -55,11 +66,11 @@ export default async function RunDetailPage({ params }: { params: Promise<{ id: 
         </article>
         <article className="card">
           <p className="card-label">Spans</p>
-          <p className="card-value">{spans?.length ?? 0}</p>
+          <p className="card-value">{run.span_count ?? spans?.length ?? 0}</p>
         </article>
         <article className="card">
           <p className="card-label">Tokens</p>
-          <p className="card-value">{run.tokens_in + run.tokens_out}</p>
+          <p className="card-value">{(run.tokens_in ?? 0) + (run.tokens_out ?? 0)}</p>
         </article>
         <article className="card">
           <p className="card-label">Cost</p>
@@ -69,6 +80,11 @@ export default async function RunDetailPage({ params }: { params: Promise<{ id: 
 
       <section>
         <h2>Spans</h2>
+        {spansTruncated ? (
+          <p className="lede">
+            Showing the first {MAX_SPANS_RENDERED} spans of {run.span_count ?? "many"}.
+          </p>
+        ) : null}
         {spans && spans.length > 0 ? (
           <ol className="trace-spans">
             {spans.map((span) => (

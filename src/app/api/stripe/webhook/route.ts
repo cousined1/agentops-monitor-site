@@ -73,9 +73,22 @@ async function applySubscriptionState(params: {
   );
 }
 
+// API-R02: bound the buffered body. Real Stripe events are far smaller;
+// this endpoint is public, so refuse oversized bodies before reading them.
+const MAX_WEBHOOK_BODY_BYTES = 1_000_000;
+
 export async function POST(request: NextRequest) {
-  const env = appEnv();
-  const secret = env.STRIPE_WEBHOOK_SECRET;
+  let secret: string | undefined;
+  try {
+    secret = appEnv().STRIPE_WEBHOOK_SECRET;
+  } catch (err) {
+    // API-013: env schema failures must not leak their details.
+    console.error("[stripe-webhook] env validation failed:", err instanceof Error ? err.message : err);
+    return NextResponse.json(
+      { error: { message: "Webhook is not configured.", code: "webhook_not_configured" } },
+      { status: 500 },
+    );
+  }
 
   if (!secret) {
     return NextResponse.json(
@@ -92,15 +105,31 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  const declaredLength = Number(request.headers.get("content-length") ?? "0");
+  if (declaredLength > MAX_WEBHOOK_BODY_BYTES) {
+    return NextResponse.json(
+      { error: { message: "Body too large.", code: "payload_too_large" } },
+      { status: 413 },
+    );
+  }
   const rawBody = await request.text();
+  if (Buffer.byteLength(rawBody, "utf8") > MAX_WEBHOOK_BODY_BYTES) {
+    return NextResponse.json(
+      { error: { message: "Body too large.", code: "payload_too_large" } },
+      { status: 413 },
+    );
+  }
 
   let event: Stripe.Event;
   try {
     event = Stripe.webhooks.constructEvent(rawBody, signature, secret);
   } catch (err) {
-    const message = err instanceof Error ? err.message : "Signature verification failed.";
+    console.error(
+      "[stripe-webhook] signature verification failed:",
+      err instanceof Error ? err.message : err,
+    );
     return NextResponse.json(
-      { error: { message, code: "invalid_signature" } },
+      { error: { message: "Signature verification failed.", code: "invalid_signature" } },
       { status: 400 },
     );
   }

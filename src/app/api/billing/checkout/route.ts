@@ -4,6 +4,7 @@ import { getServerClient } from "@/lib/insforge";
 import {
   BillingConfigError,
   getPlanByName,
+  getPlanPriceId,
   getProfileByUserId,
   getStripe,
 } from "@/lib/billing";
@@ -14,7 +15,16 @@ export const dynamic = "force-dynamic";
 type CheckoutBody = { plan?: string };
 
 export async function POST(request: NextRequest) {
-  const env = appEnv();
+  let env: ReturnType<typeof appEnv>;
+  try {
+    env = appEnv();
+  } catch (err) {
+    console.error("[billing/checkout] env validation failed:", err instanceof Error ? err.message : err);
+    return NextResponse.json(
+      { error: { message: "Billing is not configured.", code: "billing_not_configured" } },
+      { status: 503 },
+    );
+  }
   const insforge = await getServerClient();
   const { data: userData } = await insforge.auth.getCurrentUser();
   const user = userData?.user;
@@ -26,7 +36,10 @@ export async function POST(request: NextRequest) {
   } catch {
     // empty body is fine; default plan below
   }
-  const planName = (body.plan ?? "team").toString().toLowerCase();
+  // API-006: validate the plan selector instead of echoing unvalidated input.
+  const planName = /^[a-z]{2,24}$/.test((body.plan ?? "team").toString())
+    ? (body.plan ?? "team").toString().toLowerCase()
+    : "unknown";
 
   let session_url: string;
   try {
@@ -39,7 +52,15 @@ export async function POST(request: NextRequest) {
         { status: 400 },
       );
     }
-    if (!plan.stripe_price_id) {
+    if (plan.price_usd_cents <= 0) {
+      return NextResponse.json(
+        { error: { message: `"${plan.name}" is not a purchasable plan.`, code: "not_purchasable" } },
+        { status: 400 },
+      );
+    }
+
+    const priceId = await getPlanPriceId(plan);
+    if (!priceId) {
       return NextResponse.json(
         {
           error: {
@@ -56,7 +77,7 @@ export async function POST(request: NextRequest) {
     const origin = (env.NEXT_PUBLIC_SITE_URL ?? new URL(request.url).origin).replace(/\/+$/, "");
     const session = await stripe.checkout.sessions.create({
       mode: "subscription",
-      line_items: [{ price: plan.stripe_price_id, quantity: 1 }],
+      line_items: [{ price: priceId, quantity: 1 }],
       success_url: `${origin}/billing?status=success`,
       cancel_url: `${origin}/pricing?status=cancelled`,
       client_reference_id: user.id,
@@ -81,8 +102,21 @@ export async function POST(request: NextRequest) {
         { status: 503 },
       );
     }
-    const message = err instanceof Error ? err.message : "Checkout failed.";
-    return NextResponse.json({ error: { message, code: "checkout_failed" } }, { status: 500 });
+    // P1: never leak Stripe/DB internals (e.g. price IDs, SQLSTATE) to the
+    // client. Details go to server logs only.
+    console.error(
+      "[billing/checkout] Stripe session creation failed:",
+      err instanceof Error ? err.message : err,
+    );
+    return NextResponse.json(
+      {
+        error: {
+          message: "Checkout could not be started. Please try again or contact support.",
+          code: "checkout_failed",
+        },
+      },
+      { status: 500 },
+    );
   }
 
   return NextResponse.json({ url: session_url });

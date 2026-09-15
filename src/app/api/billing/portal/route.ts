@@ -12,7 +12,16 @@ export async function POST(request: NextRequest) {
   const user = userData?.user;
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const env = appEnv();
+  let env: ReturnType<typeof appEnv>;
+  try {
+    env = appEnv();
+  } catch (err) {
+    console.error("[billing/portal] env validation failed:", err instanceof Error ? err.message : err);
+    return NextResponse.json(
+      { error: { message: "Billing is not configured.", code: "billing_not_configured" } },
+      { status: 503 },
+    );
+  }
 
   try {
     const stripe = getStripe();
@@ -36,7 +45,19 @@ export async function POST(request: NextRequest) {
         { status: 503 },
       );
     }
-    const message = err instanceof Error ? err.message : "Portal session failed.";
-    return NextResponse.json({ error: { message, code: "portal_failed" } }, { status: 500 });
+    // P1: never leak Stripe/DB internals to the client.
+    console.error(
+      "[billing/portal] Stripe portal session failed:",
+      err instanceof Error ? err.message : err,
+    );
+    return NextResponse.json(
+      {
+        error: {
+          message: "Could not open the billing portal. Please try again or contact support.",
+          code: "portal_failed",
+        },
+      },
+      { status: 500 },
+    );
   }
 }

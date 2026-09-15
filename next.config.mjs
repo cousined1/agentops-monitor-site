@@ -1,4 +1,6 @@
 const nextConfig = {
+  // SEC-R01: don't advertise the framework version.
+  poweredByHeader: false,
   async headers() {
     return [
       {

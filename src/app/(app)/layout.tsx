@@ -1,13 +1,11 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { getServerClient } from "@/lib/insforge";
+import { getSessionUser } from "@/lib/insforge";
 
 export const dynamic = "force-dynamic";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
-  const insforge = await getServerClient();
-  const { data: userData } = await insforge.auth.getCurrentUser();
-  const user = userData?.user;
+  const user = await getSessionUser();
   if (!user) {
     redirect("/login?next=/app");
   }
@@ -24,6 +22,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             <Link href="/app">Dashboard</Link>
             <Link href="/app/api-keys">API keys</Link>
             <Link href="/app/runs">Runs</Link>
+            <Link href="/billing">Billing</Link>
             <Link href="/app/profile">Profile</Link>
           </nav>
           <form action="/api/auth/sign-out" method="post">
