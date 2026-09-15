@@ -14,8 +14,14 @@ export async function POST(request: NextRequest) {
   const user = userData?.user;
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const formData = await request.formData();
-  const name = (formData.get("name") ?? "").toString().trim() || "default";
+  let formData: FormData;
+  try {
+    formData = await request.formData();
+  } catch {
+    return NextResponse.json({ error: "Invalid form body." }, { status: 400 });
+  }
+  // API-007: bound the display name so a huge field cannot produce a DB error.
+  const name = ((formData.get("name") ?? "").toString().trim() || "default").slice(0, 64);
 
   const generated = generateApiKey(name);
 
@@ -34,7 +40,12 @@ export async function POST(request: NextRequest) {
   ]);
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    // API-001: raw Postgres errors must not reach the client.
+    console.error("[api-keys/POST] insert failed:", error.message);
+    return NextResponse.json(
+      { error: "Could not create the API key. Please try again." },
+      { status: 500 },
+    );
   }
 
   revalidatePath("/app/api-keys");
@@ -47,7 +58,12 @@ export async function PATCH(request: NextRequest) {
   const user = userData?.user;
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const body = (await request.json()) as { id?: string; is_active?: boolean };
+  let body: { id?: string; is_active?: boolean };
+  try {
+    body = (await request.json()) as { id?: string; is_active?: boolean };
+  } catch {
+    return NextResponse.json({ error: "Invalid body" }, { status: 400 });
+  }
   if (!body.id || typeof body.is_active !== "boolean") {
     return NextResponse.json({ error: "Invalid body" }, { status: 400 });
   }
@@ -56,7 +72,10 @@ export async function PATCH(request: NextRequest) {
     .update({ is_active: body.is_active })
     .eq("id", body.id)
     .eq("user_id", user.id);
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) {
+    console.error("[api-keys/PATCH] update failed:", error.message);
+    return NextResponse.json({ error: "Could not update the API key." }, { status: 500 });
+  }
   return NextResponse.json({ ok: true });
 }
 
@@ -66,13 +85,21 @@ export async function DELETE(request: NextRequest) {
   const user = userData?.user;
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const body = (await request.json()) as { id?: string };
+  let body: { id?: string };
+  try {
+    body = (await request.json()) as { id?: string };
+  } catch {
+    return NextResponse.json({ error: "Missing id" }, { status: 400 });
+  }
   if (!body.id) return NextResponse.json({ error: "Missing id" }, { status: 400 });
   const { error } = await insforge.database
     .from("api_keys")
     .delete()
     .eq("id", body.id)
     .eq("user_id", user.id);
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) {
+    console.error("[api-keys/DELETE] delete failed:", error.message);
+    return NextResponse.json({ error: "Could not delete the API key." }, { status: 500 });
+  }
   return NextResponse.json({ ok: true });
 }

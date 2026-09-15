@@ -73,17 +73,19 @@
             <tr><td><code>aom_cookie_consent</code></td><td>strictly necessary</td><td>Stores categories, timestamp, policy version, region label, GPC state, and how the choice was made.</td><td>Until browser storage is cleared or the policy version changes.</td></tr>
             <tr><td>Hosting request logs</td><td>strictly necessary</td><td>Security, abuse prevention, availability, and incident investigation. These are server logs, not browser cookies.</td><td>Hosting platform schedule.</td></tr>
             <tr><td>Google Consent Mode state</td><td>strictly necessary</td><td>Defaults optional Google storage to denied. No Google Analytics, Ads, or Tag Manager script is currently loaded.</td><td>Current page view.</td></tr>
+            <tr><td><code>aom-chatbot-state</code></td><td>strictly necessary</td><td>Remembers whether the chat assistant panel is open so the widget behaves consistently.</td><td>Until browser storage is cleared.</td></tr>
+            <tr><td><code>aom-chatbot-lead</code></td><td>preferences</td><td>Remembers the details you typed into the chat assistant (email, company) so you do not have to re-enter them. Only written after you allow preferences storage; sending the lead itself is always your choice.</td><td>Until browser storage is cleared.</td></tr>
           </tbody>
         </table>
       </div>
-      <p>No analytics, preference, marketing, advertising, chat, pixel, or third party font technology is currently installed.</p>
+      <p>No third party analytics, marketing, advertising, pixel, or font technology is currently installed. The chat assistant is first party: when you submit a lead it sends the details you provided, including the conversation transcript, to our own <code>/api/leads</code> endpoint, where they are recorded in server logs (see the <a href="/privacy">Privacy Notice</a>).</p>
     </section>
 
     <section class="legal-block">
       <h2>Categories</h2>
       <p><strong>Strictly necessary:</strong> supports security and remembers your privacy choice. It does not require opt-in.</p>
       <p><strong>Analytics:</strong> would measure site use and performance. It is off by default and no analytics provider is currently installed.</p>
-      <p><strong>Preferences:</strong> would remember optional interface settings. It is off by default and no optional preference storage is currently installed.</p>
+      <p><strong>Preferences:</strong> remembers optional interface settings, such as the chat assistant lead details. It is off by default: the chat assistant only writes preference storage after you allow it.</p>
       <p><strong>Marketing:</strong> would support advertising or cross-site measurement. It is off by default and no marketing provider is currently installed.</p>
     </section>
 

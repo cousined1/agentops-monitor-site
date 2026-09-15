@@ -4,6 +4,7 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { getAuthActions, getServerClient } from "@/lib/insforge";
+import { safeAuthMessage } from "@/lib/auth-errors";
 import { SignupSubmitButton } from "@/components/signup-track";
 
 const PENDING_SIGNUP_COOKIE = "aom_pending_signup";
@@ -71,7 +72,8 @@ export default async function SignupPage({
       name: fullName || undefined,
     });
     if (error) {
-      redirect(`/signup?error=${encodeURIComponent(error.message)}`);
+      console.error("[signup] auth signUp failed:", error.message);
+      redirect(`/signup?error=${encodeURIComponent(safeAuthMessage(error.message))}`);
     }
 
     if (data?.requireEmailVerification) {
@@ -102,8 +104,16 @@ export default async function SignupPage({
             company: company || null,
           },
         ]);
-      if (profileError)
-        redirect(`/signup?error=${encodeURIComponent(profileError.message)}`);
+      if (profileError) {
+        // P1: raw Postgres errors (table names, SQLSTATE) must never render
+        // on the page. Details go to server logs only.
+        console.error("[signup] profile upsert failed:", profileError.message);
+        redirect(
+          `/signup?error=${encodeURIComponent(
+            "Your account was created, but we couldn't finish setting up your profile. Please contact support.",
+          )}`,
+        );
+      }
     }
     redirect("/app?signup=success");
   }
@@ -122,8 +132,11 @@ export default async function SignupPage({
       otp: input.data.otp,
     });
     if (error || !data?.user) {
+      console.error("[signup/verify] verifyEmail failed:", error?.message);
       redirect(
-        `/signup?step=verify&error=${encodeURIComponent(error?.message ?? "Verification failed.")}`,
+        `/signup?step=verify&error=${encodeURIComponent(
+          safeAuthMessage(error?.message ?? "Verification failed."),
+        )}`,
       );
     }
 
@@ -139,12 +152,23 @@ export default async function SignupPage({
         },
       ]);
     if (profileError) {
+      console.error("[signup/verify] profile upsert failed:", profileError.message);
       redirect(
-        `/signup?step=verify&error=${encodeURIComponent(profileError.message)}`,
+        `/signup?step=verify&error=${encodeURIComponent(
+          "Your email is verified, but we couldn't finish setting up your account. Please contact support.",
+        )}`,
       );
     }
 
-    (await cookies()).delete(PENDING_SIGNUP_COOKIE);
+    // AUTHZ-006: the cookie was set with path="/signup"; deleting it with the
+    // default path "/" leaves it alive. Match the set-path on delete.
+    (await cookies()).set(PENDING_SIGNUP_COOKIE, "", {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      path: "/signup",
+      maxAge: 0,
+    });
     redirect("/app?signup=success");
   }
 

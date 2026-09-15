@@ -25,12 +25,21 @@ const LeadSchema = z.object({
 
 const buckets = new Map<string, { count: number; windowStart: number }>();
 
+const MAX_BUCKETS = 20_000;
+
 function allowRequest(key: string): boolean {
   const now = Date.now();
   if (buckets.size > 10_000) {
     for (const [k, v] of buckets) {
       if (now - v.windowStart >= 60_000) buckets.delete(k);
     }
+  }
+  // API-004: expired-entry pruning alone still allows unbounded growth within
+  // a single window flood; drop the oldest windows once the map is at cap.
+  while (buckets.size >= MAX_BUCKETS) {
+    const oldest = buckets.keys().next().value;
+    if (oldest === undefined) break;
+    buckets.delete(oldest);
   }
   const bucket = buckets.get(key);
   if (!bucket || now - bucket.windowStart >= 60_000) {
@@ -42,9 +51,15 @@ function allowRequest(key: string): boolean {
 }
 
 function clientIp(request: NextRequest): string {
-  const forwarded = request.headers.get("x-forwarded-for");
-  if (forwarded) return forwarded.split(",")[0].trim();
-  return request.headers.get("x-real-ip") ?? "unknown";
+  // API-004: X-Forwarded-For is client-spoofable; Cloudflare (the edge in
+  // front of Railway) overwrites CF-Connecting-IP with the real client IP,
+  // so prefer it and only fall back down the proxy chain.
+  return (
+    request.headers.get("cf-connecting-ip") ??
+    request.headers.get("x-real-ip") ??
+    request.headers.get("x-forwarded-for")?.split(",")[0].trim() ??
+    "unknown"
+  );
 }
 
 function scrubLogValue(value: string): string {
@@ -53,6 +68,11 @@ function scrubLogValue(value: string): string {
 }
 
 export async function POST(request: NextRequest) {
+  // API-003: reject from the declared length before buffering the body.
+  const declaredLength = Number(request.headers.get("content-length") ?? "0");
+  if (declaredLength > MAX_BODY_BYTES) {
+    return NextResponse.json({ error: "Lead payload too large." }, { status: 413 });
+  }
   const rawBody = await request.text();
   if (Buffer.byteLength(rawBody, "utf8") > MAX_BODY_BYTES) {
     return NextResponse.json({ error: "Lead payload too large." }, { status: 413 });

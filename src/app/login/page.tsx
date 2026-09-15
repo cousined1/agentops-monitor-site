@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getAuthActions } from "@/lib/insforge";
+import { safeAuthMessage } from "@/lib/auth-errors";
 import { safeRedirectPath } from "@/lib/redirects";
 
 export const metadata: Metadata = {
@@ -25,7 +26,10 @@ export default async function LoginPage({
     const auth = await getAuthActions();
     const { error } = await auth.signInWithPassword({ email, password });
     if (error) {
-      redirect(`/login?error=${encodeURIComponent(error.message)}&next=${encodeURIComponent(next)}`);
+      console.error("[login] signInWithPassword failed:", error.message);
+      redirect(
+        `/login?error=${encodeURIComponent(safeAuthMessage(error.message))}&next=${encodeURIComponent(next)}`,
+      );
     }
     redirect(next);
   }

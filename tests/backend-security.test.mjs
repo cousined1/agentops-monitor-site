@@ -53,16 +53,18 @@ describe("backend security boundaries", () => {
     expect(response.headers.get("location")).toBeNull();
   });
 
-  it("does not expose lookalike API auth paths", async () => {
+  it("returns a JSON 401 (not an HTML login redirect) for lookalike API auth paths", async () => {
+    // REL-008: API consumers cannot follow HTML redirects; the middleware
+    // must answer /api/* without a session using a machine-readable 401.
     const { middleware } = await import("../src/middleware.ts");
     const { NextRequest } = await import("next/server");
     const request = new NextRequest("https://app.example/api/authentication");
 
     const response = await middleware(request);
 
-    expect(response.headers.get("location")).toBe(
-      "https://app.example/login?next=%2Fapi%2Fauthentication",
-    );
+    expect(response.status).toBe(401);
+    expect(response.headers.get("location")).toBeNull();
+    await expect(response.json()).resolves.toEqual({ error: "Unauthorized" });
   });
 
   it("preserves protected-route query parameters through login", async () => {

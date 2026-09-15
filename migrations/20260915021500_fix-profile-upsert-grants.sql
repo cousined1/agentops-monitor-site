@@ -1,0 +1,35 @@
+-- ============================================================
+-- AgentOps Monitor — fix signup profile upsert grants (P0-1)
+--
+-- QA 2026-09-14: signup rendered "permission denied for table profiles".
+-- The account was created but the profile row insert failed, so
+-- full_name/company silently dropped and the raw Postgres error was
+-- shown on the page.
+--
+-- Root cause: 20260910120000_restrict-profile-billing-updates revoked
+-- table-level INSERT/UPDATE on public.profiles and re-granted them
+-- column-scoped as (email, full_name, company, updated_at). The signup
+-- and verify server actions (src/app/signup/page.tsx) write the profile
+-- with the InsForge SDK's PostgREST upsert, which sends
+-- Prefer: resolution=merge-duplicates. PostgREST compiles that to
+--
+--   INSERT INTO public.profiles (id, email, full_name, company) VALUES (...)
+--   ON CONFLICT (id) DO UPDATE
+--     SET id = EXCLUDED.id, email = EXCLUDED.email, ...
+--
+-- The SET list includes the primary key column, so the statement needs
+-- UPDATE privilege on `id` as well. That column had no grant -> SQLSTATE
+-- 42501, and the whole (plain-INSERT-compatible) upsert failed.
+--
+-- Fix: grant UPDATE (id) to authenticated. This cannot escalate: the
+-- "own profile" RLS policy carries WITH CHECK ((select auth.uid()) = id),
+-- so the only new-row id any authenticated user can produce is their own
+-- auth.users id. Billing columns stay webhook/admin-write-only.
+--
+-- Verified live on 2026-09-15: upsert as `authenticated` returned 403
+-- before this grant and 200 after, with INSERT/UPDATE still denied on
+-- stripe_customer_id / current_plan_name / subscription_status /
+-- current_period_end.
+-- ============================================================
+
+grant update (id) on table public.profiles to authenticated;

@@ -13,29 +13,35 @@ export const dynamic = "force-dynamic";
 
 export default async function DashboardPage() {
   const insforge = await getServerClient();
-  const { data: runs } = await insforge.database
-    .from("runs")
-    .select("id,external_id,agent_name,status,started_at,tokens_in,tokens_out,cost_usd")
-    .order("started_at", { ascending: false })
-    .limit(10);
-
-  const { data: keys } = await insforge.database
-    .from("api_keys")
-    .select("id,name,is_active,last_used_at,created_at")
-    .order("created_at", { ascending: false })
-    .limit(5);
-
-  const { count: totalRuns } = await insforge.database
-    .from("runs")
-    .select("id", { count: "exact", head: true });
-
-  const { count: totalKeys } = await insforge.database
-    .from("api_keys")
-    .select("id", { count: "exact", head: true });
+  // PERF-002: these four reads are independent — issue them concurrently
+  // instead of stacking five serial round trips with the layout's user check.
+  let runs: Awaited<ReturnType<typeof loadDashboard>>["runs"] | null = null;
+  let keys: Awaited<ReturnType<typeof loadDashboard>>["keys"] | null = null;
+  let totalRuns: number | null = null;
+  let totalKeys: number | null = null;
+  let dbError: string | null = null;
+  try {
+    const result = await loadDashboard(insforge);
+    runs = result.runs;
+    keys = result.keys;
+    totalRuns = result.totalRuns;
+    totalKeys = result.totalKeys;
+  } catch (error) {
+    // REL-006/REL-007: an outage must look like an outage, not "no data".
+    dbError = error instanceof Error ? error.message : "Database request failed.";
+    console.error("[app/dashboard] InsForge query failed:", dbError);
+  }
 
   return (
     <>
       <SignupCompletedTracker />
+      {dbError ? (
+        <section>
+          <p className="auth-error">
+            The dashboard could not reach the database. Data shown below may be stale.
+          </p>
+        </section>
+      ) : null}
       <section>
         <h1>Dashboard</h1>
         <p className="lede">A live view of what your agents are doing right now.</p>
@@ -121,4 +127,32 @@ export default async function DashboardPage() {
       </section>
     </>
   );
+}
+
+type InsforgeClient = Awaited<ReturnType<typeof getServerClient>>;
+
+async function loadDashboard(insforge: InsforgeClient) {
+  // PERF-002: fire the four independent reads concurrently.
+  const [runs, keys, totalRuns, totalKeys] = await Promise.all([
+    insforge.database
+      .from("runs")
+      .select("id,external_id,agent_name,status,started_at,tokens_in,tokens_out,cost_usd")
+      .order("started_at", { ascending: false })
+      .limit(10),
+    insforge.database
+      .from("api_keys")
+      .select("id,name,is_active,last_used_at,created_at")
+      .order("created_at", { ascending: false })
+      .limit(5),
+    insforge.database.from("runs").select("id", { count: "exact", head: true }),
+    insforge.database.from("api_keys").select("id", { count: "exact", head: true }),
+  ]);
+  if (runs.error) throw new Error(runs.error.message);
+  if (keys.error) throw new Error(keys.error.message);
+  return {
+    runs: runs.data,
+    keys: keys.data,
+    totalRuns: totalRuns.count,
+    totalKeys: totalKeys.count,
+  };
 }
