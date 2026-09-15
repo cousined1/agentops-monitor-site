@@ -1,0 +1,131 @@
+# AgentOps Monitor - Complete System Context & Documentation (agentopsmonitor.com)
+> Observability, telemetry, distributed tracing, and security monitoring for multi-agent systems and LLM pipelines.
+
+This document contains comprehensive architecture, technical specifications, and API documentation for LLMs, AI agents, and automated crawlers querying AgentOps Monitor.
+
+---
+
+## 1. Platform Overview
+AgentOps Monitor (https://agentopsmonitor.com) is an observability and reliability platform engineered specifically for autonomous agent networks, multi-agent frameworks, and complex LLM architectures.
+
+### Core Problems Solved
+- Invisible Cascading Failures: Multi-agent loops where subagents hallucinate or get stuck in recursive execution cycles.
+- Token Runaways and Budget Exhaustion: Unchecked tool calls causing sudden cost spikes across OpenAI, Anthropic, Gemini, or local models.
+- Tool Call Failures: Silent errors in API calls, malformed parameters, or unhandled exceptions in agent toolchains.
+- Security and Policy Breaches: Prompt injection, unauthorized data exfiltration, and tool execution outside defined boundary policies.
+
+---
+
+## 2. Core Architecture & Features
+
+### 2.1 Distributed Multi-Agent Tracing
+- OpenTelemetry (OTLP) compatible trace collector.
+- Visual execution graph showing parent agents, subagents, tool invocations, and LLM reasoning steps.
+- Sub-millisecond trace ingestion pipeline with end-to-end latency profiling.
+- Support for asynchronous agent communication patterns (pub/sub, direct message, blackboard).
+
+### 2.2 Cost and Token Analytics
+- Real-time tracking of input tokens, output tokens, cached tokens, and reasoning tokens.
+- Cost attribution grouped by agent role, model provider, prompt template, user ID, or organization workspace.
+- Configurable circuit breakers: automatically pause agents or abort runs when token or spend thresholds are reached.
+
+### 2.3 Agent Security Guardrails
+- Input/Output scanner for prompt injections, jailbreaks, and sensitive data leakage (PII/credentials).
+- Tool authorization policies restricting execution of sensitive operations based on agent identity and session state.
+- Automated killswitches triggered by anomalous behavior or repeated validation failures.
+
+### 2.4 Framework & SDK Ecosystem
+AgentOps Monitor provides zero-overhead SDKs and integrations for:
+- Python: `pip install agentops-monitor`
+- Node.js / TypeScript: `npm install @agentops/monitor`
+- Native connectors: LangChain, LangGraph, CrewAI, AutoGen, LlamaIndex, OpenAI Swarm.
+
+---
+
+## 3. Quick Start & Integration Guides
+
+### Python Integration
+```python
+import agentops_monitor
+
+# Initialize tracking at application startup
+agentops_monitor.init(
+    api_key="aom_live_...",
+    project="customer-support-swarm",
+    environment="production"
+)
+
+# Automatic instrumentation wraps popular frameworks
+from langchain.chat_models import ChatOpenAI
+llm = ChatOpenAI(model="gpt-4o")
+```
+
+### TypeScript / Node.js Integration
+```typescript
+import { initAgentOps } from "@agentops/monitor";
+
+const monitor = initAgentOps({
+  apiKey: process.env.AGENTOPS_API_KEY,
+  projectName: "data-analysis-agent",
+  environment: "production",
+});
+
+// Trace an agent execution session
+const session = monitor.startSession({
+  agentId: "analyst-01",
+  sessionId: "sess-98213",
+});
+```
+
+---
+
+## 4. REST API Reference
+
+All requests to the ingestion API require the `Authorization: Bearer <API_KEY>` header.
+
+### Endpoints
+- `POST https://agentopsmonitor.com/api/ingest`
+  - Ingest raw spans, execution traces, and event payloads.
+  - Body: JSON payload matching the OpenTelemetry span format or native AgentOps schema.
+- `GET https://agentopsmonitor.com/api/health`
+  - Returns service health and uptime status.
+- `GET https://agentopsmonitor.com/api/status`
+  - Returns current ingestion latency and pipeline metrics.
+
+---
+
+## 5. Pricing and Plans
+
+### Developer (Free)
+- $0 / month
+- Up to 50,000 events / month
+- 7 days trace retention
+- Community support and core integrations
+
+### Team (Growth)
+- $49 / month
+- Up to 1,000,000 events / month
+- 30 days trace retention
+- Cost alerts, anomaly detection, and priority support
+
+### Enterprise
+- Custom pricing / annual billing
+- Dedicated ingestion cluster, custom retention policies, SOC 2 compliance, SLA guarantees, and on-premises deployment options.
+
+---
+
+## 6. Site Map & Canonical URL Reference
+- Homepage: https://agentopsmonitor.com/
+- Features: https://agentopsmonitor.com/features
+- Pricing: https://agentopsmonitor.com/pricing
+- Documentation: https://agentopsmonitor.com/docs
+- Integrations: https://agentopsmonitor.com/integrations
+- Blog: https://agentopsmonitor.com/blog
+- About Us: https://agentopsmonitor.com/about
+- Contact: https://agentopsmonitor.com/contact
+- Privacy Policy: https://agentopsmonitor.com/privacy
+- Terms of Service: https://agentopsmonitor.com/terms
+- Sitemap XML: https://agentopsmonitor.com/sitemap.xml
+- Robots TXT: https://agentopsmonitor.com/robots.txt
+- LLMs TXT: https://agentopsmonitor.com/llms.txt
+- Full LLM Context: https://agentopsmonitor.com/llms-full.txt
