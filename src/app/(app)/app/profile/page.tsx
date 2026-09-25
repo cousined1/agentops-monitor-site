@@ -11,6 +11,16 @@ export const metadata: Metadata = {
 
 export const dynamic = "force-dynamic";
 
+function safeFormatDate(value: unknown): string {
+  if (!value) return "-";
+  try {
+    const d = new Date(value as string | number | Date);
+    return isNaN(d.getTime()) ? "-" : d.toLocaleDateString();
+  } catch {
+    return "-";
+  }
+}
+
 export default async function ProfilePage() {
   const insforge = await getServerClient();
   const { data: userData } = await insforge.auth.getCurrentUser();
@@ -22,6 +32,8 @@ export default async function ProfilePage() {
     .select("email,full_name,company,created_at")
     .eq("id", user.id)
     .maybeSingle();
+
+  const userRecord = user as unknown as { createdAt?: string; created_at?: string };
 
   return (
     <>
@@ -52,7 +64,7 @@ export default async function ProfilePage() {
           </div>
           <div>
             <dt>Joined</dt>
-            <dd>{new Date(profile?.created_at ?? user.createdAt).toLocaleDateString()}</dd>
+            <dd>{safeFormatDate(profile?.created_at ?? userRecord.createdAt ?? userRecord.created_at)}</dd>
           </div>
         </dl>
       </section>

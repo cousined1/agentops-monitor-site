@@ -156,6 +156,8 @@ const server = createServer(async (request, response) => {
     ["favicon.ico", "public/favicon.ico"],
     ["robots.txt", "robots.txt"],
     ["sitemap.xml", "sitemap.xml"],
+    ["llms.txt", "public/llms.txt"],
+    ["llms-full.txt", "public/llms-full.txt"],
   ]);
   let requested = cleanPath === "/" ? "index.html" : cleanPath.slice(1);
   const extensionlessRoutes = new Map([

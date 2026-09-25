@@ -1,4 +1,4 @@
-﻿import type { Metadata } from "next";
+import type { Metadata } from "next";
 import SubscribeButton from "./SubscribeButton";
 
 export const metadata: Metadata = {
@@ -81,8 +81,8 @@ export default function PricingPage() {
       </section>
 
       <section>
-        <p className="eyebrow">Pre-launch</p>
-        <p>Pricing shown is planned launch pricing. See <a href="/contact">contact</a> for the latest.</p>
+        <p className="eyebrow">Pricing notes</p>
+        <p>Annual billing and custom volume commitments are available. See <a href="/contact">contact</a> for details.</p>
       </section>
     </main>
   );

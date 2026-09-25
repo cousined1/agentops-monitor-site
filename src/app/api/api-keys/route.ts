@@ -14,14 +14,23 @@ export async function POST(request: NextRequest) {
   const user = userData?.user;
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  let formData: FormData;
-  try {
-    formData = await request.formData();
-  } catch {
-    return NextResponse.json({ error: "Invalid form body." }, { status: 400 });
+  let name = "default";
+  const contentType = request.headers.get("content-type") ?? "";
+  if (contentType.includes("application/json")) {
+    try {
+      const json = (await request.json()) as { name?: string };
+      name = ((json?.name ?? "").toString().trim() || "default").slice(0, 64);
+    } catch {
+      return NextResponse.json({ error: "Invalid JSON body." }, { status: 400 });
+    }
+  } else {
+    try {
+      const formData = await request.formData();
+      name = ((formData.get("name") ?? "").toString().trim() || "default").slice(0, 64);
+    } catch {
+      return NextResponse.json({ error: "Invalid form body." }, { status: 400 });
+    }
   }
-  // API-007: bound the display name so a huge field cannot produce a DB error.
-  const name = ((formData.get("name") ?? "").toString().trim() || "default").slice(0, 64);
 
   const generated = generateApiKey(name);
 
@@ -48,7 +57,11 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  revalidatePath("/app/api-keys");
+  try {
+    revalidatePath("/app/api-keys");
+  } catch {
+    // Non-fatal if invoked outside request cache context
+  }
   return NextResponse.json({ ok: true, key: generated.raw });
 }
 

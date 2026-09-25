@@ -6,7 +6,7 @@ export function Footer() {
       <div className="footer-inner">
         <div className="footer-brand">
           <p className="brand-name">AgentOps Monitor</p>
-          <p>Observability for AI agents in production. Pre-launch.</p>
+          <p>Observability for AI agents in production.</p>
         </div>
 
         <nav className="footer-section" aria-label="Product">
@@ -86,7 +86,7 @@ export function Footer() {
       </div>
 
       <div className="footer-meta">
-        <span>© AgentOps Monitor · pre-launch</span>
+        <span>© AgentOps Monitor</span>
         <button type="button" data-cookie-preferences>
           Cookie Preferences
         </button>
