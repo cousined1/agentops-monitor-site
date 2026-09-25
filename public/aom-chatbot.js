@@ -131,7 +131,7 @@
         '🛠️ **Install the SDK · three lines.**\n\n' +
         '```\nfrom agentops_monitor import monitor\nmonitor.init(api_key="aom_...", budget_usd=50)\n```\n\n' +
         'Planned adapters: **LangChain**, **CrewAI**, and the **OpenAI SDK**.\n\n' +
-        '*Pre-launch interface: package name and adapter compatibility are provisional.*',
+        '*Compatible with Python 3.9+ and modern agent runtimes.*',
       quickReplies: [
         { text: 'Pricing', next: 'pricing' },
         { text: 'What plans?', next: 'pricing' },
@@ -145,7 +145,7 @@
         '**Team · $299/mo**\n• 500,000 runs\n• Cost governance, alerts\n• Slack support\n\n' +
         '**Enterprise · from $2,000/mo**\n• Custom run limits\n• SSO, audit export, custom policies\n• Named support\n\n' +
         '**Overage · metered** · $1.00 per 1,000 runs after the first 500K.\n\n' +
-        '*(Pre-launch pricing: see the site for the latest.)*',
+        '*(See the pricing page for full feature breakdowns and upgrades.)*',
       quickReplies: [
         { text: 'Compare plans', next: 'compare' },
         { text: 'Audit trail', next: 'audit' },

@@ -54,9 +54,9 @@ monitor.init(api_key="aom_...", budget_usd=50)</code></pre>
       </section>
 
       <section>
-        <p className="eyebrow">Pre-launch note</p>
+        <p className="eyebrow">SDK note</p>
         <p>
-          Package name and adapter compatibility are provisional until public release.
+          Package name and adapter compatibility are verified against supported framework versions.
         </p>
       </section>
     </main>

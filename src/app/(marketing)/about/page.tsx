@@ -33,7 +33,7 @@ export default function AboutPage() {
       <section>
         <h2>Status</h2>
         <p>
-          Pre-launch. Adapters, package names, and pricing shown on this site are provisional until public release.
+          General availability MVP. Adapters and features ship continuously.
         </p>
       </section>
 
