@@ -13,7 +13,7 @@ export default function BlogPage() {
         <p className="eyebrow">Blog</p>
         <h1>Notes from the agent-operations desk.</h1>
         <p className="lede">
-          Pre-launch. Posts will land here once we are out of stealth.
+          Engineering notes and production case studies from the agent operations desk.
         </p>
       </section>
 
@@ -21,7 +21,7 @@ export default function BlogPage() {
         <h2>Coming topics</h2>
         <ul>
           <li>Budget caps as a deployment gate, not a dashboard widget</li>
-          <li>Why pre-launch pricing is honest pricing</li>
+          <li>Why volume-based pricing is honest pricing</li>
           <li>The four-pain model: see, explain, cap, audit</li>
           <li>Replay before review: traces as a PR check</li>
           <li>What "audit trail" actually means at 2 a.m.</li>

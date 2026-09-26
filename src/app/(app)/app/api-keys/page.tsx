@@ -24,10 +24,14 @@ export default async function ApiKeysPage() {
     const id = (formData.get("id") ?? "").toString();
     if (!id) return;
     const server = await getServerClient();
+    const { data: userData } = await server.auth.getCurrentUser();
+    const user = userData?.user;
+    if (!user) return;
     const { error } = await server.database
       .from("api_keys")
       .update({ is_active: false })
-      .eq("id", id);
+      .eq("id", id)
+      .eq("user_id", user.id);
     if (error) throw new Error(error.message);
     revalidatePath("/app/api-keys");
   }

@@ -6,7 +6,7 @@
     <text x="80" y="260" font-size="84">Trace every tool call.</text>
     <text x="80" y="360" font-size="84">Govern every dollar.</text>
     <text x="80" y="460" font-size="84">Audit every decision.</text>
-    <text x="80" y="560" font-size="28" fill="#8b95a7">Pre-launch observability for AI agents</text>
+    <text x="80" y="560" font-size="28" fill="#8b95a7">Observability for AI agents in production</text>
   </g>
   <g stroke="#56d364" stroke-width="3">
     <line x1="80" y1="120" x2="1120" y2="120"/>
