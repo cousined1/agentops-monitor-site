@@ -47,7 +47,7 @@ async function applySubscriptionState(params: {
   const admin = getAdmin();
   let userId = params.userId ?? null;
 
-  if (!userId) {
+  if (!userId && params.customerId) {
     const profile = await getProfileByCustomerId(params.customerId);
     userId = profile?.id ?? null;
   }
@@ -62,12 +62,16 @@ async function applySubscriptionState(params: {
     planName = plan?.name ?? null;
   }
 
-  await updateProfileBilling(userId, {
-    stripe_customer_id: params.customerId,
+  const patch: Parameters<typeof updateProfileBilling>[1] = {
     current_plan_name: planName,
     subscription_status: params.status,
     current_period_end: params.periodEndIso,
-  });
+  };
+  if (params.customerId) {
+    patch.stripe_customer_id = params.customerId;
+  }
+
+  await updateProfileBilling(userId, patch);
   console.log(
     `[stripe-webhook] profile ${userId} synced: plan=${planName ?? "?"} status=${params.status}`,
   );
@@ -182,7 +186,7 @@ export async function POST(request: NextRequest) {
           await applySubscriptionState({
             userId: (session.metadata?.userId as string) ?? session.client_reference_id,
             customerId:
-              typeof session.customer === "string" ? session.customer : session.customer?.id ?? "",
+              typeof session.customer === "string" ? session.customer : (session.customer?.id || ""),
             priceId,
             status: sub.status,
             periodEndIso: periodEndToIso(periodEnd),

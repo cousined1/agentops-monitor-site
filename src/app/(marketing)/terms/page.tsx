@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 
 export const metadata: Metadata = {
   title: "Terms of Service",
-  description: "Terms of Service for AgentOps Monitor. Pre-launch placeholder; final terms will be published before public release.",
+  description: "Terms of Service for AgentOps Monitor.",
   alternates: { canonical: "/terms" },
 };
 
@@ -13,21 +13,21 @@ export default function TermsPage() {
         <p className="eyebrow">Legal</p>
         <h1>Terms of Service</h1>
         <p className="lede">
-          Pre-launch placeholder. Final terms will be published before public release.
+          Standard terms governing your use of AgentOps Monitor services and dashboard.
         </p>
       </section>
 
       <section>
         <h2>Acceptance</h2>
         <p>
-          By using AgentOps Monitor during the pre-launch period, you agree to use the service for evaluation and integration testing only. Production workloads should wait for the public release of these terms.
+          By using AgentOps Monitor, you agree to these terms. If you are entering into this agreement on behalf of a company, you represent that you have authority to bind that entity.
         </p>
       </section>
 
       <section>
         <h2>Service availability</h2>
         <p>
-          The pre-launch service is provided as-is. We may reset, modify, or take down the service with reasonable notice.
+          We strive for high availability across all ingestion endpoints and dashboard services, backed by automated health monitoring and incident response.
         </p>
       </section>
 

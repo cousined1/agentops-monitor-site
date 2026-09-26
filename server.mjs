@@ -30,7 +30,7 @@ const contentSecurityPolicy = [
   "default-src 'self'",
   "img-src 'self' data: https://www.google-analytics.com https://*.analytics.google.com",
   "style-src 'self' 'unsafe-inline'",
-  "script-src 'self' 'unsafe-inline' https://static.cloudflareinsights.com",
+  "script-src 'self' 'unsafe-inline' https://static.cloudflareinsights.com https://www.googletagmanager.com",
   "font-src 'self'",
   "connect-src 'self' https://*.insforge.app https://cloudflareinsights.com https://*.cloudflareinsights.com https://www.google-analytics.com https://*.analytics.google.com https://www.googletagmanager.com",
   "object-src 'none'",
@@ -163,7 +163,6 @@ const server = createServer(async (request, response) => {
   const extensionlessRoutes = new Map([
     ["privacy", "privacy.html"],
     ["cookie-policy", "cookie-policy.html"],
-    ["blog", "blog.html"],
   ]);
   const lowerRoute = requested.toLowerCase();
   requested = extensionlessRoutes.get(lowerRoute) ?? requested;

@@ -27,6 +27,7 @@ const PUBLIC_PATHS = new Set([
   "/aom-chatbot.js",
   "/login",
   "/signup",
+  "/not-found",
   "/api/health",
   "/api/auth/refresh",
   "/api/auth/sign-out",
@@ -52,7 +53,13 @@ export async function middleware(request: NextRequest) {
   }
   const accessToken = session?.accessToken ?? null;
 
-  if (PUBLIC_PATHS.has(pathname) || pathname.startsWith("/blog/")) return response;
+  const isProtectedPath =
+    pathname.startsWith("/app") ||
+    pathname === "/billing" ||
+    pathname.startsWith("/billing/") ||
+    (pathname.startsWith("/api/") && !PUBLIC_PATHS.has(pathname));
+
+  if (!isProtectedPath) return response;
 
   if (!accessToken) {
     // REL-008: API consumers can't follow HTML redirects — return a JSON 401
