@@ -17,6 +17,15 @@ vi.mock("@insforge/sdk/ssr", () => ({
   })),
 }));
 
+// AUDIT-RUN-20260930-202741: /api/leads persists via the admin client now
+// (FINDING-api-surface-001), so this suite needs a backend stub. Default is a
+// successful write; individual tests can override when they need a failure.
+vi.mock("@insforge/sdk", () => ({
+  createAdminClient: vi.fn(() => ({
+    database: { from: () => ({ insert: async () => ({ data: null, error: null }) }) },
+  })),
+}));
+
 describe("backend security boundaries", () => {
   const originalSha = process.env.RAILWAY_GIT_COMMIT_SHA;
 
@@ -133,6 +142,9 @@ describe("backend security boundaries", () => {
   });
 
   it("handles lead capture POST and OPTIONS at /api/leads", async () => {
+    process.env.NEXT_PUBLIC_INSFORGE_URL = "https://backend.example";
+    process.env.NEXT_PUBLIC_INSFORGE_ANON_KEY = "anon-key-with-at-least-twenty-characters";
+    process.env.INSFORGE_API_KEY = "admin-key-with-at-least-twenty-characters";
     const { POST, OPTIONS } = await import("../src/app/api/leads/route.ts");
     const { NextRequest } = await import("next/server");
 
@@ -143,7 +155,9 @@ describe("backend security boundaries", () => {
 
     const postRes = await POST(postReq);
     expect(postRes.status).toBe(200);
-    await expect(postRes.json()).resolves.toEqual({ status: "ok" });
+    await expect(postRes.json()).resolves.toEqual(
+      expect.objectContaining({ status: "ok" }),
+    );
 
     const optionsRes = await OPTIONS(new Request("https://app.example/api/leads"));
     expect(optionsRes.status).toBe(204);
