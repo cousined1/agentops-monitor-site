@@ -1,15 +1,29 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createHash, randomUUID } from "node:crypto";
+import { createAdminClient } from "@insforge/sdk";
 import { z } from "zod";
+import { appEnv } from "@/lib/env";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 // DELTA-003 hardening (audit/08-delta-review.md): this endpoint is public by
 // design (unauthenticated chat lead capture), so it validates strictly, caps
-// payload size, rate-limits per client IP, and logs WITHOUT raw PII — the
-// email is reduced to a short salt-free hash for correlation, the company
-// name is reduced to a length, and the transcript is reduced to a byte count.
+// payload size, and rate-limits per client IP.
+//
+// AUDIT-RUN-20260930-202741 / FINDING-api-surface-001 (Critical): the endpoint
+// previously logged WITHOUT raw PII and then persisted NOTHING — a one-way
+// sha256(email) prefix, a company character count and a transcript byte count,
+// followed by {"status":"ok"}. The chatbot promises a 24-hour follow-up, so
+// every inbound sales lead was destroyed and, because the hash is one-way, was
+// unrecoverable from logs too.
+//
+// It now WRITES the lead to public.leads using the server-side admin key
+// (migrations/20261002004624_create-leads.sql). The console line is kept but
+// stays PII-free — it is a correlation breadcrumb, not the record of truth.
+// If the write fails we return 503 rather than "ok": telling a visitor their
+// details were captured when they were not is the specific defect this fixes,
+// so a storage failure must never look like success.
 const MAX_BODY_BYTES = 16_000;
 const LEAD_RATE_LIMIT_PER_MIN = 5;
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
@@ -102,13 +116,53 @@ export async function POST(request: NextRequest) {
   const transcriptBytes =
     conversation === undefined ? 0 : Buffer.byteLength(JSON.stringify(conversation) ?? "", "utf8");
 
-  console.log(
-    `[lead received] id=${randomUUID()} emailHash=${emailHash} company=${
+  const correlationId = randomUUID();
+
+  // Persist FIRST. Returning "ok" while the lead was dropped is the exact
+  // defect this audit found, so a storage failure is surfaced to the caller
+  // instead of being swallowed.
+  let persisted = false;
+  let persistError: string | null = null;
+  try {
+    const env = appEnv();
+    const admin = createAdminClient({
+      baseUrl: env.NEXT_PUBLIC_INSFORGE_URL,
+      apiKey: env.INSFORGE_API_KEY,
+    });
+    const { error } = await admin.database.from("leads").insert({
+      email,
+      company: company ?? null,
+      source: source ?? null,
+      product: product ?? null,
+      conversation: conversation ?? null,
+    });
+    if (error) {
+      persistError = error.message;
+    } else {
+      persisted = true;
+    }
+  } catch (err) {
+    persistError = err instanceof Error ? err.message : "unknown persistence error";
+  }
+
+  // PII-free breadcrumb: correlation id plus lengths, never the values.
+  console.error(
+    `[lead ${persisted ? "stored" : "LOST"}] id=${correlationId} emailHash=${emailHash} company=${
       company ? `provided(${scrubLogValue(company).length} chars)` : "absent"
-    } source=${scrubLogValue(source ?? "-")} product=${scrubLogValue(product ?? "-")} transcriptBytes=${transcriptBytes}`,
+    } source=${scrubLogValue(source ?? "-")} product=${scrubLogValue(product ?? "-")} transcriptBytes=${transcriptBytes}` +
+      (persistError ? ` persistError=${scrubLogValue(persistError)}` : ""),
   );
 
-  return NextResponse.json({ status: "ok" });
+  if (!persisted) {
+    // 503 + Retry-After: the visitor's details were NOT captured, so the
+    // chatbot should offer to retry rather than repeat the 24-hour promise.
+    return NextResponse.json(
+      { error: "We could not record your details. Please try again in a moment." },
+      { status: 503, headers: { "Retry-After": "30" } },
+    );
+  }
+
+  return NextResponse.json({ status: "ok", id: correlationId });
 }
 
 export async function OPTIONS(request: NextRequest | Request) {

@@ -69,6 +69,13 @@ describe("Customer MVP Workflow Simulation", () => {
       }),
     });
 
+    // AUDIT-RUN-20260930-202741: the endpoint now persists the lead rather than
+    // logging and discarding it (FINDING-api-surface-001), so the backend stub
+    // must resolve an insert and the server env must be present.
+    mockFrom.mockReturnValue({
+      insert: vi.fn().mockResolvedValue({ data: null, error: null }),
+    });
+
     const res = await POST(req);
     expect(res.status).toBe(200);
     const body = await res.json();

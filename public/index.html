@@ -1,6 +1,38 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+  <!-- Consent Mode default: MUST run before the GTM loader below, or
+       tags fire with no consent signal set (AUDIT-RUN-20260930-202741). -->
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag("consent", "default", {
+      ad_storage: "denied",
+      analytics_storage: "denied",
+      ad_user_data: "denied",
+      ad_personalization: "denied",
+      functionality_storage: "denied",
+      personalization_storage: "denied",
+      security_storage: "granted",
+      wait_for_update: 500
+    });
+    // Re-apply a stored choice here in the head, not only from
+    // /cookie-consent.js after it loads.
+    try {
+      var stored = JSON.parse(localStorage.getItem("aom_cookie_consent"));
+      if (stored && stored.categories && stored.policyVersion === "2026-08-19-v1") {
+        var c = stored.categories;
+        gtag("consent", "update", {
+          analytics_storage: c.analytics ? "granted" : "denied",
+          functionality_storage: c.preferences ? "granted" : "denied",
+          personalization_storage: c.preferences ? "granted" : "denied",
+          ad_storage: c.marketing ? "granted" : "denied",
+          ad_user_data: c.marketing ? "granted" : "denied",
+          ad_personalization: c.marketing ? "granted" : "denied"
+        });
+      }
+    } catch (e) {}
+  </script>
   <!-- Google Tag Manager -->
   <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
   new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
@@ -31,20 +63,6 @@
   <link rel="canonical" href="https://agentopsmonitor.com/">
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' fill='%230e1116'/%3E%3Cpath d='M3 4h10M3 8h10M3 12h10' stroke='%2356d364' stroke-width='1.5'/%3E%3C/svg%3E">
   <link rel="stylesheet" href="styles.css">
-  <script>
-    window.dataLayer = window.dataLayer || [];
-    function gtag(){dataLayer.push(arguments);}
-    gtag("consent", "default", {
-      ad_storage: "denied",
-      analytics_storage: "denied",
-      ad_user_data: "denied",
-      ad_personalization: "denied",
-      functionality_storage: "denied",
-      personalization_storage: "denied",
-      security_storage: "granted",
-      wait_for_update: 500
-    });
-  </script>
   <script src="cookie-consent.js" defer></script>
   <style>
     :focus-visible { outline: 2px solid #56d364; outline-offset: 2px; }
