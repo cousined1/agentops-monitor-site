@@ -11,6 +11,12 @@ vi.mock("@insforge/sdk", () => ({
   })),
 }));
 
+// Set before any route module loads: src/app/api/ingest/route.ts calls
+// appEnv() at module scope, and appEnv caches the parsed snapshot on first
+// call. If the webhook secret is not in that first snapshot, the later F-04
+// webhook cap test sees "not configured" no matter when its describe runs.
+process.env.STRIPE_WEBHOOK_SECRET = "whsec_caps_test_secret";
+
 describe("ingest transaction boundary", () => {
   let POST;
 
@@ -118,7 +124,6 @@ describe("streaming body-size caps (F-04)", () => {
   let webhookPOST;
 
   beforeAll(async () => {
-    process.env.STRIPE_WEBHOOK_SECRET = "whsec_caps_test_secret";
     ({ POST: leadsPOST } = await import("../src/app/api/leads/route.ts"));
     ({ POST: webhookPOST } = await import("../src/app/api/stripe/webhook/route.ts"));
   });
