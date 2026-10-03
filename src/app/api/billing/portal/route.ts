@@ -6,11 +6,38 @@ import { BillingConfigError, getProfileByUserId, getStripe } from "@/lib/billing
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
+type InsforgeClient = Awaited<ReturnType<typeof getServerClient>>;
+
+// F-06: distinguish an InsForge auth outage (503, retry later) from a
+// genuinely sessionless request (401). Never answer an outage with 401.
+async function requirePortalUser(insforge: InsforgeClient) {
+  const { data: userData, error: authError } = await insforge.auth.getCurrentUser();
+  if (authError) {
+    console.error("[billing/portal] auth check failed:", authError.message);
+    return {
+      user: null,
+      response: NextResponse.json(
+        {
+          error: {
+            message: "Authentication is temporarily unavailable. Please try again shortly.",
+            code: "auth_unavailable",
+          },
+        },
+        { status: 503 },
+      ),
+    };
+  }
+  const user = userData?.user ?? null;
+  if (!user) {
+    return { user: null, response: NextResponse.json({ error: "Unauthorized" }, { status: 401 }) };
+  }
+  return { user, response: null };
+}
+
 export async function POST(request: NextRequest) {
   const insforge = await getServerClient();
-  const { data: userData } = await insforge.auth.getCurrentUser();
-  const user = userData?.user;
-  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const { user, response: authFailure } = await requirePortalUser(insforge);
+  if (authFailure) return authFailure;
 
   let env: ReturnType<typeof appEnv>;
   try {

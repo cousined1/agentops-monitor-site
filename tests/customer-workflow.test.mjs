@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 
 // Mock the backend InsForge SDK and external services to simulate the customer MVP workflow.
@@ -249,5 +250,255 @@ describe("Customer MVP Workflow Simulation", () => {
     expect(res.status).toBe(303);
     expect(res.headers.get("location")).toBe("https://agentopsmonitor.com/login");
     expect(mockAuth.signOut).toHaveBeenCalled();
+  });
+});
+
+// F-02 (sdk-docs): the docs and LLM-facing files must describe the REAL
+// ingestion surface — a plain HTTP POST to /api/ingest with an aom_live_ key —
+// and must not reference the fabricated PyPI package, monitor.init, or the
+// nonexistent /api/status endpoint.
+describe("F-02 documentation truth", () => {
+  function read(relativePath) {
+    return readFileSync(new URL(`../${relativePath}`, import.meta.url), "utf8");
+  }
+
+  const quickstartFiles = [
+    "src/app/(marketing)/docs/page.tsx",
+    "src/app/(marketing)/help/page.tsx",
+    "src/app/page.tsx",
+    "public/llms.txt",
+    "public/llms-full.txt",
+  ];
+
+  it("docs quickstart contains no fabricated SDK import or monitor.init", () => {
+    const docs = read("src/app/(marketing)/docs/page.tsx");
+    expect(docs).not.toContain("from agentops_monitor import monitor");
+    expect(docs).not.toContain("monitor.init");
+    expect(docs).not.toContain("pip install agentops-monitor");
+  });
+
+  it("docs quickstart shows a working HTTP ingest sample with an aom_live_ key", () => {
+    const docs = read("src/app/(marketing)/docs/page.tsx");
+    expect(docs).toContain("/api/ingest");
+    expect(docs).toContain("aom_live_");
+    expect(docs).toMatch(/requests\.post|urllib\.request/);
+    expect(docs).toContain("Authorization");
+  });
+
+  it("no quickstart file references the fabricated /api/status endpoint", () => {
+    for (const file of quickstartFiles) {
+      expect(read(file), file).not.toContain("/api/status");
+    }
+  });
+
+  it("no quickstart file references the fabricated PyPI package or init call", () => {
+    for (const file of quickstartFiles) {
+      const content = read(file);
+      expect(content, file).not.toContain("agentops_monitor.init");
+      expect(content, file).not.toContain("pip install agentops-monitor");
+      expect(content, file).not.toContain("@agentops/monitor");
+    }
+  });
+
+  it("llms files document the aom_live_ key prefix and the real ingest endpoint", () => {
+    for (const file of ["public/llms.txt", "public/llms-full.txt"]) {
+      const content = read(file);
+      expect(content, file).toContain("aom_live_");
+      expect(content, file).toContain("/api/ingest");
+      expect(content, file).not.toContain("$49");
+    }
+  });
+
+  it("llms-full prices Pro at $299/mo", () => {
+    const full = read("public/llms-full.txt");
+    expect(full).toContain("$299");
+  });
+});
+
+// F-03 (entitlement): self-healing profile provisioning. A user whose profile
+// write failed during signup must be repaired on login and by the billing
+// status endpoint, and plan assignments must never be dropped silently.
+describe("F-03 entitlement self-heal", () => {
+  const USER = { id: "user-mvp-123", email: "customer@example.com" };
+
+  beforeAll(() => {
+    // Self-sufficient under `vitest -t` filtering: the env bootstrap in the
+    // workflow describe above is skipped when its tests are filtered out.
+    process.env.NEXT_PUBLIC_INSFORGE_URL ??= "https://backend.example";
+    process.env.NEXT_PUBLIC_INSFORGE_ANON_KEY ??= "anon-key-with-at-least-twenty-characters";
+    process.env.INSFORGE_API_KEY ??= "admin-key-with-at-least-twenty-characters";
+  });
+
+  function profilesMock({ rows, upsert }) {
+    return {
+      select: vi.fn(() => ({
+        eq: vi.fn().mockResolvedValue({ data: rows, error: null }),
+      })),
+      upsert,
+    };
+  }
+
+  it("billing status repairs a missing profile instead of returning 404", async () => {
+    mockAuth.getCurrentUser.mockResolvedValue({ data: { user: USER } });
+    const upsert = vi.fn().mockResolvedValue({ data: null, error: null });
+    mockFrom.mockImplementation((table) => {
+      expect(table).toBe("profiles");
+      return profilesMock({ rows: [], upsert });
+    });
+
+    const { GET } = await import("../src/app/api/billing/status/route.ts");
+    const { NextRequest } = await import("next/server");
+
+    const res = await GET(new NextRequest("https://agentopsmonitor.com/api/billing/status"));
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.plan).toBe("free");
+    expect(body.status).toBe("inactive");
+    expect(body.repaired).toBe(true);
+    expect(upsert).toHaveBeenCalledWith([
+      expect.objectContaining({ id: USER.id, email: USER.email }),
+    ]);
+  });
+
+  it("billing status returns 401 for an invalid session", async () => {
+    mockAuth.getCurrentUser.mockResolvedValue({
+      data: { user: null },
+      error: null,
+    });
+
+    const { GET } = await import("../src/app/api/billing/status/route.ts");
+    const { NextRequest } = await import("next/server");
+
+    const res = await GET(new NextRequest("https://agentopsmonitor.com/api/billing/status"));
+    expect(res.status).toBe(401);
+  });
+
+  it("billing status returns 503 on backend outage, not a false 200", async () => {
+    mockAuth.getCurrentUser.mockResolvedValue({
+      data: null,
+      error: new Error("DB Connection Refused"),
+    });
+
+    const { GET } = await import("../src/app/api/billing/status/route.ts");
+    const { NextRequest } = await import("next/server");
+
+    const res = await GET(new NextRequest("https://agentopsmonitor.com/api/billing/status"));
+    expect(res.status).toBe(503);
+  });
+
+  it("updateProfileBilling upserts so a plan assignment is never dropped", async () => {
+    const upsert = vi.fn().mockResolvedValue({ data: null, error: null });
+    mockFrom.mockReturnValue({ upsert });
+
+    const { updateProfileBilling } = await import("../src/lib/billing.ts");
+    await updateProfileBilling(USER.id, {
+      current_plan_name: "team",
+      subscription_status: "active",
+    });
+
+    expect(upsert).toHaveBeenCalledWith([
+      expect.objectContaining({
+        id: USER.id,
+        current_plan_name: "team",
+        subscription_status: "active",
+      }),
+    ]);
+  });
+
+  it("ensureProfileBilling repairs a missing profile via upsert", async () => {
+    const upsert = vi.fn().mockResolvedValue({ data: null, error: null });
+    mockFrom.mockImplementation((table) => {
+      expect(table).toBe("profiles");
+      return profilesMock({ rows: [], upsert });
+    });
+
+    const { ensureProfileBilling } = await import("../src/lib/billing.ts");
+    const profile = await ensureProfileBilling(USER.id, USER.email);
+
+    expect(upsert).toHaveBeenCalledWith([
+      expect.objectContaining({ id: USER.id, email: USER.email }),
+    ]);
+    expect(profile.id).toBe(USER.id);
+    expect(profile.subscription_status).toBe("inactive");
+  });
+
+  it("ensureProfileBilling leaves an existing profile untouched", async () => {
+    const upsert = vi.fn();
+    mockFrom.mockImplementation((table) => {
+      expect(table).toBe("profiles");
+      return profilesMock({
+        rows: [
+          {
+            id: USER.id,
+            current_plan_name: "team",
+            subscription_status: "active",
+            current_period_end: "2026-10-25T00:00:00.000Z",
+            stripe_customer_id: "cus_mvp_test_123",
+          },
+        ],
+        upsert,
+      });
+    });
+
+    const { ensureProfileBilling } = await import("../src/lib/billing.ts");
+    const profile = await ensureProfileBilling(USER.id, USER.email);
+
+    expect(upsert).not.toHaveBeenCalled();
+    expect(profile.current_plan_name).toBe("team");
+  });
+
+  it("login page self-heals a missing profile after password sign-in", () => {
+    const login = readFileSync(
+      new URL("../src/app/login/page.tsx", import.meta.url),
+      "utf8",
+    );
+    // The self-heal must run after a successful sign-in, not on the error path.
+    expect(login).toContain("ensureProfileBilling");
+    expect(login).toMatch(/signInWithPassword[\s\S]*ensureProfileBilling/);
+  });
+});
+
+// F-07 (mvp-features): marketing copy makes zero unbacked claims, and the run
+// detail view renders stored span inputs/outputs with latency.
+describe("F-07 marketing truth and span detail", () => {
+  function read(relativePath) {
+    return readFileSync(new URL(`../${relativePath}`, import.meta.url), "utf8");
+  }
+
+  it("features page tags unreleased capabilities as Planned / Roadmap", () => {
+    const features = read("src/app/(marketing)/features/page.tsx");
+    expect(features).toContain("Planned / Roadmap");
+    expect(features).toContain("Real-time automated budget killing");
+    expect(features).toContain("Multi-region SSO");
+    expect(features).toContain("LangChain");
+    // The adapters are not shipped yet; claiming they ship is an unbacked claim.
+    expect(features).not.toContain("The SDK ships ingestion");
+  });
+
+  it("about page tags unreleased capabilities as Planned / Roadmap", () => {
+    const about = read("src/app/(marketing)/about/page.tsx");
+    expect(about).toContain("Planned / Roadmap");
+    expect(about).toMatch(/not yet built|not shipped/i);
+  });
+
+  it("run detail renders stored spans with collapsible inputs, outputs, and latency", () => {
+    const page = read("src/app/(app)/app/runs/[id]/page.tsx");
+    // The stored trace payloads are fetched, not just summary columns.
+    expect(page).toMatch(/SPAN_DETAIL_COLUMNS[^;]*input/);
+    expect(page).toMatch(/SPAN_DETAIL_COLUMNS[^;]*output/);
+    expect(page).toContain(".select(SPAN_DETAIL_COLUMNS)");
+    // Spans are inspectable: collapsible details with payload JSON and latency.
+    expect(page).toContain("<details");
+    expect(page).toContain("<summary>");
+    expect(page).toContain("JSON.stringify");
+    expect(page).toContain("duration_ms");
+  });
+
+  it("run detail shows Unable to load spans on spans query failure", () => {
+    const page = read("src/app/(app)/app/runs/[id]/page.tsx");
+    expect(page).toContain("Unable to load spans");
+    // The empty-state message must stay out of the failure branch.
+    const failureBranch = page.split("Unable to load spans")[0];
+    expect(failureBranch).not.toContain("No spans recorded");
   });
 });

@@ -19,9 +19,9 @@ AgentOps Monitor provides real-time telemetry, OpenTelemetry-compatible tracing,
 - [About AgentOps Monitor](https://agentopsmonitor.com/about)
 - [Contact & Enterprise Support](https://agentopsmonitor.com/contact)
 
-## Quick Start (Node.js & Python SDKs)
-Install the SDK and initialize client tracing with zero configuration overhead:
-- Python: `pip install agentops-monitor`
-- Node.js / TypeScript: `npm install @agentops/monitor`
+## Quick Start (plain HTTPS ingestion)
+Ingestion is a single authenticated HTTPS endpoint. Create an API key (prefix `aom_live_`) under Account -> API keys, then POST a JSON trace:
+- Python: `requests.post("https://agentopsmonitor.com/api/ingest", headers={"Authorization": "Bearer aom_live_..."}, json={...})`
+- Any other stack: send the same JSON body with the same `Authorization: Bearer aom_live_...` header.
 
-Set `AGENTOPS_API_KEY` in your environment and configure ingestion endpoints via `https://agentopsmonitor.com/api/ingest`.
+Trace schema and error codes: see [Documentation & Integration Guides](https://agentopsmonitor.com/docs).

@@ -35,6 +35,9 @@ export default function AboutPage() {
         <p>
           General availability MVP. Adapters and features ship continuously.
         </p>
+        <p>
+          Planned / Roadmap, not yet built: real-time automated budget killing, multi-region SSO, and framework adapters for LangChain, CrewAI, the OpenAI SDK, and the Anthropic SDK. Everything else on this site ships today.
+        </p>
       </section>
 
       <section>

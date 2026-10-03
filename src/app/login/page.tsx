@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getAuthActions } from "@/lib/insforge";
+import { ensureProfileBilling } from "@/lib/billing";
 import { safeAuthMessage } from "@/lib/auth-errors";
 import { safeRedirectPath } from "@/lib/redirects";
 
@@ -24,13 +25,28 @@ export default async function LoginPage({
     const email = (formData.get("email") ?? "").toString().trim();
     const password = (formData.get("password") ?? "").toString();
     const auth = await getAuthActions();
-    const { error } = await auth.signInWithPassword({ email, password });
+    const { data, error } = await auth.signInWithPassword({ email, password });
     if (error) {
       console.error("[login] signInWithPassword failed:", error.message);
       redirect(
         `/login?error=${encodeURIComponent(safeAuthMessage(error.message))}&next=${encodeURIComponent(next)}`,
       );
     }
+
+    // F-03: if the profile write failed during signup, sign-in is the recovery
+    // path — repair the row before the user lands in the dashboard.
+    const userId = data?.user?.id;
+    if (userId) {
+      try {
+        await ensureProfileBilling(userId, email);
+      } catch (profileError) {
+        console.error(
+          "[login] profile self-heal failed:",
+          profileError instanceof Error ? profileError.message : profileError,
+        );
+      }
+    }
+
     redirect(next);
   }
 
