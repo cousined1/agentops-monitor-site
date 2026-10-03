@@ -24,7 +24,7 @@ export const dynamic = "force-dynamic";
 // If the write fails we return 503 rather than "ok": telling a visitor their
 // details were captured when they were not is the specific defect this fixes,
 // so a storage failure must never look like success.
-const MAX_BODY_BYTES = 16_000;
+const MAX_BODY_BYTES = 100_000;
 const LEAD_RATE_LIMIT_PER_MIN = 5;
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
@@ -78,7 +78,35 @@ function clientIp(request: NextRequest): string {
 
 function scrubLogValue(value: string): string {
   // Strip control characters so a crafted field cannot forge log lines.
-  return value.replace(/[\u0000-\u001f\u007f]+/g, " ").trim();
+  return value.replace(/[\x00-\x1F\x7F]+/g, " ").trim();
+}
+
+// F-04 (dos-defense): stream the body through a capped reader instead of
+// buffering request.text(). A payload past the cap cancels the stream and
+// returns null so the caller answers 413 without holding the overrun in
+// memory; a mid-stream read failure is rethrown after cancelling so the
+// handler cannot silently treat a truncated body as the whole lead.
+async function readBody(request: NextRequest | Request, maxBytes: number): Promise<string | null> {
+  if (!request.body) return "";
+  const reader = request.body.getReader();
+  const chunks: Uint8Array[] = [];
+  let received = 0;
+  try {
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      received += value.byteLength;
+      if (received > maxBytes) {
+        await reader.cancel().catch(() => {});
+        return null;
+      }
+      chunks.push(value);
+    }
+  } catch (err) {
+    await reader.cancel().catch(() => {});
+    throw err;
+  }
+  return Buffer.concat(chunks).toString("utf8");
 }
 
 export async function POST(request: NextRequest) {
@@ -87,8 +115,8 @@ export async function POST(request: NextRequest) {
   if (declaredLength > MAX_BODY_BYTES) {
     return NextResponse.json({ error: "Lead payload too large." }, { status: 413 });
   }
-  const rawBody = await request.text();
-  if (Buffer.byteLength(rawBody, "utf8") > MAX_BODY_BYTES) {
+  const rawBody = await readBody(request, MAX_BODY_BYTES);
+  if (rawBody === null) {
     return NextResponse.json({ error: "Lead payload too large." }, { status: 413 });
   }
 

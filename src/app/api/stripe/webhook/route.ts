@@ -77,9 +77,37 @@ async function applySubscriptionState(params: {
   );
 }
 
-// API-R02: bound the buffered body. Real Stripe events are far smaller;
-// this endpoint is public, so refuse oversized bodies before reading them.
-const MAX_WEBHOOK_BODY_BYTES = 1_000_000;
+// API-R02/F-04: bound the streamed body. Real Stripe events are far smaller;
+// this endpoint is public, so refuse oversized bodies while reading them.
+const MAX_WEBHOOK_BODY_BYTES = 5_000_000;
+
+// F-04 (dos-defense): streaming reader that aborts at the cap instead of
+// buffering the whole body before measuring it.
+async function readBodyCapped(
+  request: NextRequest,
+  maxBytes: number,
+): Promise<string | null> {
+  if (!request.body) return "";
+  const reader = request.body.getReader();
+  const chunks: Uint8Array[] = [];
+  let received = 0;
+  try {
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      received += value.byteLength;
+      if (received > maxBytes) {
+        await reader.cancel().catch(() => {});
+        return null;
+      }
+      chunks.push(value);
+    }
+  } catch (err) {
+    await reader.cancel().catch(() => {});
+    throw err;
+  }
+  return Buffer.concat(chunks).toString("utf8");
+}
 
 export async function POST(request: NextRequest) {
   let secret: string | undefined;
@@ -116,8 +144,8 @@ export async function POST(request: NextRequest) {
       { status: 413 },
     );
   }
-  const rawBody = await request.text();
-  if (Buffer.byteLength(rawBody, "utf8") > MAX_WEBHOOK_BODY_BYTES) {
+  const rawBody = await readBodyCapped(request, MAX_WEBHOOK_BODY_BYTES);
+  if (rawBody === null) {
     return NextResponse.json(
       { error: { message: "Body too large.", code: "payload_too_large" } },
       { status: 413 },

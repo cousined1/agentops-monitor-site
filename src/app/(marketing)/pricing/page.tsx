@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import { getSessionUser } from "@/lib/insforge";
+import { getProfileByUserId } from "@/lib/billing";
 import SubscribeButton from "./SubscribeButton";
 
 export const metadata: Metadata = {
@@ -8,7 +10,27 @@ export const metadata: Metadata = {
   alternates: { canonical: "/pricing" },
 };
 
-export default function PricingPage() {
+export const dynamic = "force-dynamic";
+
+// F-05: subscribers must manage their plan (Billing Portal), never re-launch
+// Stripe Checkout. The server-side guard in /api/billing/checkout is the hard
+// backstop; this check lets the button reflect the real state up front.
+async function hasActiveSubscription(): Promise<boolean> {
+  try {
+    const user = await getSessionUser();
+    if (!user) return false;
+    const profile = await getProfileByUserId(user.id);
+    const status = profile?.subscription_status;
+    return status === "active" || status === "trialing";
+  } catch (error) {
+    console.error("[pricing] subscription check failed:", error instanceof Error ? error.message : error);
+    return false;
+  }
+}
+
+export default async function PricingPage() {
+  const subscribed = await hasActiveSubscription();
+
   return (
     <main>
       <section>
@@ -39,7 +61,13 @@ export default function PricingPage() {
             <p>500,000 runs</p>
             <p>Cost governance, alerts</p>
             <p>Slack support</p>
-            <p><SubscribeButton plan="team" label="Subscribe to Team" /></p>
+            <p>
+              <SubscribeButton
+                plan="team"
+                label={subscribed ? "Manage subscription" : "Subscribe to Team"}
+                subscribed={subscribed}
+              />
+            </p>
           </article>
           <article className="card">
             <p className="card-label">Enterprise</p>

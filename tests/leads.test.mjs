@@ -112,8 +112,18 @@ describe("leads endpoint hardening (DELTA-003 + audit persistence)", () => {
     expect(res.status).toBe(400);
   });
 
+  it("accepts a ~50 KB payload under the 100 KB cap (F-04)", async () => {
+    const res = await POST(
+      leadRequest(
+        { email: "lead@example.com", conversation: [{ sender: "user", text: "x".repeat(49_000) }] },
+        "203.0.113.50",
+      ),
+    );
+    expect(res.status).toBe(200);
+  });
+
   it("rejects oversized payloads with 413 before doing any work", async () => {
-    const bigBlob = "x".repeat(20_000);
+    const bigBlob = "x".repeat(120_000);
     const res = await POST(leadRequest({ email: "lead@example.com", blob: bigBlob }));
     expect(res.status).toBe(413);
   });

@@ -118,6 +118,37 @@ export async function getProfileByCustomerId(customerId: string): Promise<Profil
   return (rows[0] as ProfileBilling) ?? null;
 }
 
+/**
+ * F-03: self-heal a missing profile row. Signup writes the profile in a second
+ * step after auth account creation; if that write failed (or the webhook lands
+ * first), the user still has an auth record. Repair on read instead of failing
+ * closed, and return the recovered row.
+ */
+export async function ensureProfileBilling(
+  userId: string,
+  email?: string,
+): Promise<ProfileBilling> {
+  const existing = await getProfileByUserId(userId);
+  if (existing) return existing;
+
+  const repair = {
+    id: userId,
+    email: email ?? null,
+    current_plan_name: "free",
+    subscription_status: "inactive",
+  };
+  const { error } = await getAdmin().database.from("profiles").upsert([repair]);
+  if (error) throw new Error(error.message);
+  return {
+    id: userId,
+    email,
+    stripe_customer_id: null,
+    current_plan_name: "free",
+    subscription_status: "inactive",
+    current_period_end: null,
+  };
+}
+
 export async function updateProfileBilling(
   userId: string,
   patch: Partial<{
@@ -127,8 +158,12 @@ export async function updateProfileBilling(
     current_period_end: string | null;
   }>,
 ): Promise<void> {
-  const admin = getAdmin();
-  const { error } = await admin.database.from("profiles").update(patch).eq("id", userId);
+  // F-03: upsert instead of a bare update. A silent zero-row update (profile
+  // missing because the signup write failed) must never drop a plan assignment
+  // delivered by the Stripe webhook.
+  const { error } = await getAdmin()
+    .database.from("profiles")
+    .upsert([{ id: userId, ...patch }]);
   if (error) throw new Error(error.message);
 }
 

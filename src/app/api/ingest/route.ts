@@ -66,6 +66,35 @@ const MAX_BODY_BYTES = 1_000_000;   // 1 MB total request body
 const MAX_SPAN_JSON_BYTES = 65_536; // 64 KB per span across input+output+error+metadata
 const MAX_RUN_JSON_BYTES = 65_536;  // 64 KB for run-level metadata
 
+// F-04 (dos-defense): consume the body through a streaming reader and abort
+// the moment the cap is exceeded. Buffering first and measuring afterwards
+// would load a chunked flood entirely into RAM before rejecting it.
+async function readBodyCapped(
+  request: NextRequest,
+  maxBytes: number,
+): Promise<string | null> {
+  if (!request.body) return "";
+  const reader = request.body.getReader();
+  const chunks: Uint8Array[] = [];
+  let received = 0;
+  try {
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      received += value.byteLength;
+      if (received > maxBytes) {
+        await reader.cancel().catch(() => {});
+        return null;
+      }
+      chunks.push(value);
+    }
+  } catch (err) {
+    await reader.cancel().catch(() => {});
+    throw err;
+  }
+  return Buffer.concat(chunks).toString("utf8");
+}
+
 function jsonBytes(value: unknown): number {
   try {
     return Buffer.byteLength(JSON.stringify(value) ?? "", "utf8");
@@ -99,8 +128,8 @@ export async function POST(request: NextRequest) {
     return error(413, "Request body exceeds the size limit.", "payload_too_large");
   }
 
-  const rawBody = await request.text();
-  if (Buffer.byteLength(rawBody, "utf8") > MAX_BODY_BYTES) {
+  const rawBody = await readBodyCapped(request, MAX_BODY_BYTES);
+  if (rawBody === null) {
     return error(413, "Request body exceeds the size limit.", "payload_too_large");
   }
 

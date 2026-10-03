@@ -8,6 +8,11 @@ export const metadata: Metadata = {
   alternates: { canonical: "/" },
 };
 
+const CURL_QUICKSTART = `curl -X POST https://agentopsmonitor.com/api/ingest \\
+  -H "Authorization: Bearer aom_live_..." \\
+  -H "Content-Type: application/json" \\
+  -d '{"external_id":"run-001","agent_name":"refund-triage","spans":[{"span_type":"llm","provider":"openai","model":"gpt-4o","tokens_in":8204,"tokens_out":512,"cost_usd":0.08,"duration_ms":600}]}'`;
+
 export default async function HomePage() {
   let recentRuns: number | null = null;
   try {
@@ -75,15 +80,15 @@ export default async function HomePage() {
       </section>
 
       <section id="install">
-        <h2>Install the SDK</h2>
-        <pre className="install"><code>pip install agentops-monitor
-agentops_monitor.init(api_key="aom_live_...")</code></pre>
+        <h2>Send your first trace</h2>
+        <pre className="install"><code>{CURL_QUICKSTART}</code></pre>
         <p>
-          The SDK ships ingestion for LangChain, CrewAI, OpenAI, and Anthropic. Capture every tool call and LLM decision and stream it to your dashboard.
+          Ingestion is a plain HTTPS endpoint, so any stack can post traces: Python, Node,
+          curl, or a framework adapter you write yourself.
         </p>
         <p>
           <a className="cta cta-primary" href="/docs">Read the docs</a>{" "}
-          <a className="cta cta-ghost" href="/integrations">See integrations</a>
+          <a className="cta cta-ghost" href="/signup">Get a key</a>
         </p>
       </section>
 

@@ -66,7 +66,7 @@ halt_after_seconds: 60</code></pre>
       <section>
         <h2>Ingest from any framework</h2>
         <p>
-          The SDK ships ingestion for the frameworks you already run. Planned adapters: LangChain, CrewAI, OpenAI SDK, Anthropic.
+          Send traces from any framework with a plain HTTP POST to /api/ingest. First-party adapters are not shipped yet.
         </p>
         <p>
           <a className="cta cta-ghost" href="/integrations">See integrations</a>
@@ -81,6 +81,18 @@ halt_after_seconds: 60</code></pre>
         <p>
           <a className="cta cta-primary" href="/signup">Start free</a>
         </p>
+      </section>
+
+      <section>
+        <h2>Planned / Roadmap</h2>
+        <p>
+          These capabilities are planned and are not built yet. They are listed here so the roadmap is public, not implied.
+        </p>
+        <ul>
+          <li>Real-time automated budget killing: halt overspending runs the moment a cap is crossed, without waiting for the run to end.</li>
+          <li>Multi-region SSO: SAML and OIDC sign-in across regions for enterprise fleets.</li>
+          <li>Framework adapters for LangChain, CrewAI, the OpenAI SDK, and the Anthropic SDK, so ingestion is one import instead of one HTTP call.</li>
+        </ul>
       </section>
     </main>
   );
