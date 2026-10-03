@@ -31,6 +31,15 @@ vi.mock("@insforge/sdk", () => ({
   })),
 }));
 
+// AUDIT-RUN-20260930-202741: /api/leads persists via the admin client now
+// (FINDING-api-surface-001), so this suite needs a backend stub. Default is a
+// successful write; individual tests can override when they need a failure.
+vi.mock("@insforge/sdk", () => ({
+  createAdminClient: vi.fn(() => ({
+    database: { from: () => ({ insert: async () => ({ data: null, error: null }) }) },
+  })),
+}));
+
 describe("backend security boundaries", () => {
   const originalSha = process.env.RAILWAY_GIT_COMMIT_SHA;
 
