@@ -88,20 +88,12 @@ const server = createServer(async (request, response) => {
       return;
     }
     if (request.method === "POST") {
-      let body = "";
-      request.on("data", (chunk) => {
-        body += chunk;
-        if (body.length > 1e5) request.destroy();
-      });
-      request.on("end", () => {
-        if (request.destroyed) return;
-        try {
-          const lead = JSON.parse(body || "{}");
-          console.log(`[lead received]`, lead.email ?? "no-email", lead.company ?? "");
-        } catch {}
-        response.writeHead(200, { "content-type": "application/json; charset=utf-8" });
-        response.end(JSON.stringify({ status: "ok" }));
-      });
+      response.writeHead(503, { "content-type": "application/json; charset=utf-8" });
+      response.end(
+        JSON.stringify({
+          error: "Lead capture is unavailable in the static fallback server. Use the Next.js app.",
+        }),
+      );
       return;
     }
   }
@@ -131,9 +123,14 @@ const server = createServer(async (request, response) => {
   const sectionRedirects = new Map([
     ["/pricing", "/#pricing"],
     ["/install", "/#install"],
+    ["/docs", "/#install"],
     ["/trace", "/#trace"],
+    ["/features", "/#trace"],
     ["/cost", "/#cost"],
     ["/integrations", "/#integrations"],
+    ["/contact", "/#pricing"],
+    ["/signup", "/#pricing"],
+    ["/login", "/"],
   ]);
   if (sectionRedirects.has(cleanPath)) {
     response.writeHead(302, { Location: sectionRedirects.get(cleanPath) });
@@ -150,7 +147,7 @@ const server = createServer(async (request, response) => {
     ["privacy.html", "privacy.html"],
     ["cookie-policy.html", "cookie-policy.html"],
     ["styles.css", "styles.css"],
-    ["aom-chatbot.js", "aom-chatbot.js"],
+    ["aom-chatbot.js", "public/aom-chatbot.js"],
     ["cookie-consent.js", "cookie-consent.js"],
     ["og-image.svg", "og-image.svg"],
     ["favicon.ico", "public/favicon.ico"],
@@ -204,6 +201,13 @@ const server = createServer(async (request, response) => {
     response.end("Not found");
   }
 });
+
+if (process.env.NODE_ENV === "production" && process.env.ALLOW_MARKETING_STATIC !== "1") {
+  console.error(
+    "Refusing to start server.mjs in production without ALLOW_MARKETING_STATIC=1 because it is a limited marketing-only fallback.",
+  );
+  process.exit(1);
+}
 
 // Drain in-flight responses before exiting on deploy signals (REL-007).
 const shutdown = () => server.close(() => process.exit(0));

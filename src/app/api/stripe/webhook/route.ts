@@ -44,7 +44,6 @@ async function applySubscriptionState(params: {
   status: string;
   periodEndIso: string | null;
 }) {
-  const admin = getAdmin();
   let userId = params.userId ?? null;
 
   if (!userId && params.customerId) {
@@ -52,28 +51,35 @@ async function applySubscriptionState(params: {
     userId = profile?.id ?? null;
   }
   if (!userId) {
-    console.log(`[stripe-webhook] no profile for customer ${params.customerId}; skipping DB sync`);
-    return;
+    throw new Error(`No profile found for Stripe customer ${params.customerId}`);
   }
 
-  let planName: string | null = null;
+  let planName: string | undefined;
   if (params.priceId) {
     const plan = await getPlanByPriceId(params.priceId);
-    planName = plan?.name ?? null;
+    if (!plan) {
+      console.warn(
+        `[stripe-webhook] unknown price ${params.priceId}; leaving current_plan_name unchanged`,
+      );
+    } else {
+      planName = plan.name;
+    }
   }
 
   const patch: Parameters<typeof updateProfileBilling>[1] = {
-    current_plan_name: planName,
     subscription_status: params.status,
     current_period_end: params.periodEndIso,
   };
+  if (planName !== undefined) {
+    patch.current_plan_name = planName;
+  }
   if (params.customerId) {
     patch.stripe_customer_id = params.customerId;
   }
 
   await updateProfileBilling(userId, patch);
   console.log(
-    `[stripe-webhook] profile ${userId} synced: plan=${planName ?? "?"} status=${params.status}`,
+    `[stripe-webhook] profile ${userId} synced: plan=${planName ?? "unchanged"} status=${params.status}`,
   );
 }
 

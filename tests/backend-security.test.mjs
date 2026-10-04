@@ -277,6 +277,24 @@ describe("F-05 duplicate-checkout guard and F-06 outage handling", () => {
     await expect(response.json()).resolves.toMatchObject({ url: "/billing" });
   });
 
+  it("F-05: past_due subscribers are also routed to /billing, not a new checkout session", async () => {
+    stubSession({ user: { id: "user-3", email: "pastdue@example.com" } });
+    stubProfiles([
+      { id: "user-3", stripe_customer_id: "cus_3", subscription_status: "past_due", current_plan_name: "team", current_period_end: null },
+    ]);
+    const { POST } = await import("../src/app/api/billing/checkout/route.ts");
+    const request = await nextRequest("https://app.example/api/billing/checkout", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ plan: "team" }),
+    });
+
+    const response = await POST(request);
+
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toMatchObject({ url: "/billing" });
+  });
+
   it("F-05: unauthenticated checkout attempt redirects to /signup", async () => {
     stubSession();
     const { POST } = await import("../src/app/api/billing/checkout/route.ts");
@@ -415,7 +433,10 @@ describe("F-05 duplicate-checkout guard and F-06 outage handling", () => {
     expect(button).toContain("/api/billing/portal");
     expect(button).toMatch(/subscribed/);
     expect(button).toContain("/signup");
-    expect(page).toContain("getSessionUser");
+    expect(page).toContain("getSessionState");
+    expect(page).toContain("authUnavailable");
     expect(page).toMatch(/subscription_status/);
   });
 });
+
+

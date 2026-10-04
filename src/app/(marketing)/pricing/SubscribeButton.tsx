@@ -1,24 +1,32 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 
 export default function SubscribeButton({
   plan,
   label = "Subscribe",
   subscribed = false,
+  autoStart = false,
+  disabledReason = null,
 }: {
   plan: string;
   label?: string;
-  // F-05: an active subscriber manages their plan through the Billing Portal;
-  // launching Stripe Checkout again would create a duplicate subscription.
   subscribed?: boolean;
+  autoStart?: boolean;
+  disabledReason?: string | null;
 }) {
   const [busy, setBusy] = useState(false);
   const [note, setNote] = useState<string | null>(null);
   const router = useRouter();
+  const startedRef = useRef(false);
 
   async function startCheckout() {
+    if (disabledReason) {
+      setNote(disabledReason);
+      return;
+    }
+
     setBusy(true);
     setNote(null);
     try {
@@ -28,9 +36,8 @@ export default function SubscribeButton({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ plan }),
       });
-      // F-05: the route 303-redirects sessionless requests to /signup.
       if (res.status === 401 || res.type === "opaqueredirect") {
-        router.push("/signup");
+        router.push(`/signup?next=${encodeURIComponent(`/pricing?checkout=1&plan=${plan}`)}`);
         return;
       }
       const data = await res.json().catch(() => ({}));
@@ -42,6 +49,8 @@ export default function SubscribeButton({
         setNote("Billing for this plan is being set up — email us and we'll flip it on.");
       } else if (data?.error?.code === "stripe_not_configured") {
         setNote("Billing is not live yet — contact sales to subscribe.");
+      } else if (data?.error?.code === "auth_unavailable") {
+        setNote("Authentication is temporarily unavailable. Please retry shortly.");
       } else {
         setNote(data?.error?.message ?? "Could not start checkout.");
       }
@@ -53,6 +62,11 @@ export default function SubscribeButton({
   }
 
   async function openBillingPortal() {
+    if (disabledReason) {
+      setNote(disabledReason);
+      return;
+    }
+
     setBusy(true);
     setNote(null);
     try {
@@ -77,6 +91,12 @@ export default function SubscribeButton({
       setBusy(false);
     }
   }
+
+  useEffect(() => {
+    if (!autoStart || subscribed || startedRef.current) return;
+    startedRef.current = true;
+    void startCheckout();
+  }, [autoStart, subscribed]);
 
   return (
     <span>

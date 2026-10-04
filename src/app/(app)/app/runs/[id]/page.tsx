@@ -69,8 +69,28 @@ export default async function RunDetailPage({ params }: { params: Promise<{ id: 
 
   const run = runResult.data;
   const spans = spansResult.data as TraceSpan[] | null;
+  const runError = runResult.error?.message ?? null;
   const spansFailed = Boolean(spansResult.error);
   const spansTruncated = spans !== null && spans.length === MAX_SPANS_RENDERED;
+
+  if (runError) {
+    console.error("[app/runs/detail] run query failed:", runError);
+    return (
+      <>
+        <Breadcrumbs
+          items={[
+            { label: "Dashboard", href: "/app" },
+            { label: "Runs", href: "/app/runs" },
+            { label: id },
+          ]}
+        />
+        <section>
+          <h1>Run {id}</h1>
+          <p className="auth-error">We could not load this run right now. Please refresh shortly.</p>
+        </section>
+      </>
+    );
+  }
 
   if (!run) notFound();
 

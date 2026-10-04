@@ -1,5 +1,4 @@
 const nextConfig = {
-  // SEC-R01: don't advertise the framework version.
   poweredByHeader: false,
   async headers() {
     return [
@@ -29,7 +28,6 @@ const nextConfig = {
   async rewrites() {
     return {
       beforeFiles: [
-        { source: "/", destination: "/index.html" },
         { source: "/privacy", destination: "/privacy.html" },
         { source: "/cookie-policy", destination: "/cookie-policy.html" },
       ],
