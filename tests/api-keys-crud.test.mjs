@@ -20,7 +20,7 @@ const BASE_ENV = {
   INSFORGE_API_KEY: "admin-key-with-at-least-twenty-characters",
 };
 
-function sessionClient({ updateError = null, deleteError = null } = {}) {
+function sessionClient({ updateError = null, deleteError = null, updateData = [{ id: "key-1" }], deleteData = [{ id: "key-1" }] } = {}) {
   return {
     auth: {
       getCurrentUser: vi.fn(async () => ({
@@ -31,10 +31,18 @@ function sessionClient({ updateError = null, deleteError = null } = {}) {
     database: {
       from: vi.fn(() => ({
         update: vi.fn(() => ({
-          eq: vi.fn(() => ({ eq: vi.fn(async () => ({ error: updateError })) })),
+          eq: vi.fn(() => ({
+            eq: vi.fn(() => ({
+              select: vi.fn(async () => ({ data: updateData, error: updateError })),
+            })),
+          })),
         })),
         delete: vi.fn(() => ({
-          eq: vi.fn(() => ({ eq: vi.fn(async () => ({ error: deleteError })) })),
+          eq: vi.fn(() => ({
+            eq: vi.fn(() => ({
+              select: vi.fn(async () => ({ data: deleteData, error: deleteError })),
+            })),
+          })),
         })),
       })),
     },
@@ -240,5 +248,27 @@ describe("api-keys route CRUD coverage", () => {
     } finally {
       errSpy.mockRestore();
     }
+  });
+
+  it("PATCH returns 404 when the key does not belong to the current user", async () => {
+    getServerClient.mockResolvedValue(sessionClient({ updateData: [] }));
+    const { PATCH } = await import("../src/app/api/api-keys/route.ts");
+
+    const response = await PATCH(
+      jsonRequest("PATCH", JSON.stringify({ id: "missing-key", is_active: false })),
+    );
+
+    expect(response.status).toBe(404);
+    await expect(response.json()).resolves.toEqual({ error: "API key not found." });
+  });
+
+  it("DELETE returns 404 when the key does not belong to the current user", async () => {
+    getServerClient.mockResolvedValue(sessionClient({ deleteData: [] }));
+    const { DELETE } = await import("../src/app/api/api-keys/route.ts");
+
+    const response = await DELETE(jsonRequest("DELETE", JSON.stringify({ id: "missing-key" })));
+
+    expect(response.status).toBe(404);
+    await expect(response.json()).resolves.toEqual({ error: "API key not found." });
   });
 });

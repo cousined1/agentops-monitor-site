@@ -12,6 +12,11 @@ export const metadata: Metadata = {
   alternates: { canonical: "/login" },
 };
 
+function withNext(path: string, next: string) {
+  const separator = path.includes("?") ? "&" : "?";
+  return `${path}${separator}next=${encodeURIComponent(next)}`;
+}
+
 export default async function LoginPage({
   searchParams,
 }: {
@@ -24,17 +29,28 @@ export default async function LoginPage({
     "use server";
     const email = (formData.get("email") ?? "").toString().trim();
     const password = (formData.get("password") ?? "").toString();
-    const auth = await getAuthActions();
+
+    let auth;
+    try {
+      auth = await getAuthActions();
+    } catch (error) {
+      console.error("[login] auth init failed:", error instanceof Error ? error.message : error);
+      redirect(
+        withNext(
+          "/login?error=Authentication%20is%20temporarily%20unavailable.%20Please%20try%20again%20shortly.",
+          next,
+        ),
+      );
+    }
+
     const { data, error } = await auth.signInWithPassword({ email, password });
     if (error) {
       console.error("[login] signInWithPassword failed:", error.message);
       redirect(
-        `/login?error=${encodeURIComponent(safeAuthMessage(error.message))}&next=${encodeURIComponent(next)}`,
+        withNext(`/login?error=${encodeURIComponent(safeAuthMessage(error.message))}`, next),
       );
     }
 
-    // F-03: if the profile write failed during signup, sign-in is the recovery
-    // path — repair the row before the user lands in the dashboard.
     const userId = data?.user?.id;
     if (userId) {
       try {
@@ -68,7 +84,7 @@ export default async function LoginPage({
           <button className="cta cta-primary" type="submit">Sign in</button>
         </form>
         <p>
-          Need an account? <Link href="/signup">Create one</Link>.
+          Need an account? <Link href={withNext("/signup", next)}>Create one</Link>.
         </p>
       </section>
     </main>

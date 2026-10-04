@@ -20,7 +20,7 @@ type InsforgeClient = Awaited<ReturnType<typeof getServerClient>>;
 
 // F-05: a profile holding any of these Stripe statuses must never start a
 // second checkout session; they belong in the Billing Portal instead.
-const ACTIVE_SUBSCRIPTION_STATUSES = new Set(["active", "trialing"]);
+const ACTIVE_SUBSCRIPTION_STATUSES = new Set(["active", "trialing", "past_due", "unpaid", "paused", "incomplete"]);
 
 function billingEnvFailure() {
   return NextResponse.json(

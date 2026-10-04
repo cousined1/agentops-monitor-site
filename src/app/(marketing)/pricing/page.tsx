@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { getSessionUser } from "@/lib/insforge";
+import { getSessionState } from "@/lib/insforge";
 import { getProfileByUserId } from "@/lib/billing";
 import SubscribeButton from "./SubscribeButton";
 
@@ -12,24 +12,36 @@ export const metadata: Metadata = {
 
 export const dynamic = "force-dynamic";
 
-// F-05: subscribers must manage their plan (Billing Portal), never re-launch
-// Stripe Checkout. The server-side guard in /api/billing/checkout is the hard
-// backstop; this check lets the button reflect the real state up front.
-async function hasActiveSubscription(): Promise<boolean> {
+async function getPricingState(): Promise<{ subscribed: boolean; authUnavailable: boolean }> {
+  const session = await getSessionState();
+  if (session.unavailable) {
+    return { subscribed: false, authUnavailable: true };
+  }
+  if (!session.user) {
+    return { subscribed: false, authUnavailable: false };
+  }
+
   try {
-    const user = await getSessionUser();
-    if (!user) return false;
-    const profile = await getProfileByUserId(user.id);
+    const profile = await getProfileByUserId(session.user.id);
     const status = profile?.subscription_status;
-    return status === "active" || status === "trialing";
+    return {
+      subscribed: status === "active" || status === "trialing",
+      authUnavailable: false,
+    };
   } catch (error) {
     console.error("[pricing] subscription check failed:", error instanceof Error ? error.message : error);
-    return false;
+    return { subscribed: false, authUnavailable: true };
   }
 }
 
-export default async function PricingPage() {
-  const subscribed = await hasActiveSubscription();
+export default async function PricingPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ status?: string; checkout?: string; plan?: string }>;
+}) {
+  const params = await searchParams;
+  const { subscribed, authUnavailable } = await getPricingState();
+  const resumeCheckout = params.checkout === "1" && params.plan === "team";
 
   return (
     <main>
@@ -39,6 +51,14 @@ export default async function PricingPage() {
         <p className="lede">
           Run-volume pricing, not seat pricing. The same plan covers one agent or a thousand.
         </p>
+        {params.status === "cancelled" ? (
+          <p role="status">Checkout was cancelled. You can try again whenever you’re ready.</p>
+        ) : null}
+        {authUnavailable ? (
+          <p className="auth-error">
+            We could not verify your current subscription right now. Please retry in a moment.
+          </p>
+        ) : null}
         <p>
           <a className="cta cta-primary" href="/signup">Start free</a>{" "}
           <a className="cta cta-ghost" href="/contact">Talk to sales</a>
@@ -66,6 +86,12 @@ export default async function PricingPage() {
                 plan="team"
                 label={subscribed ? "Manage subscription" : "Subscribe to Team"}
                 subscribed={subscribed}
+                autoStart={resumeCheckout && !subscribed && !authUnavailable}
+                disabledReason={
+                  authUnavailable
+                    ? "Billing is temporarily unavailable while session checks recover. Please retry shortly."
+                    : null
+                }
               />
             </p>
           </article>
@@ -115,4 +141,3 @@ export default async function PricingPage() {
     </main>
   );
 }
-

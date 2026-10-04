@@ -340,7 +340,7 @@ describe("stripe webhook coverage closure", () => {
     expect(updateProfileBilling).not.toHaveBeenCalled();
   });
 
-  it("subscription.updated without a resolvable profile is skipped, not failed", async () => {
+  it("subscription.updated without a resolvable profile fails closed so Stripe retries", async () => {
     const { POST } = await loadRoute();
     getProfileByCustomerId.mockResolvedValue(null);
 
@@ -354,8 +354,12 @@ describe("stripe webhook coverage closure", () => {
       ),
     );
 
-    expect(response.status).toBe(200);
+    expect(response.status).toBe(500);
+    await expect(response.json()).resolves.toMatchObject({
+      error: { code: "webhook_handler_failed" },
+    });
     expect(updateProfileBilling).not.toHaveBeenCalled();
+    expect(ledger.seen.has("evt_no_profile_1")).toBe(false);
   });
 
   it("subscription.deleted resets the profile to the free plan", async () => {

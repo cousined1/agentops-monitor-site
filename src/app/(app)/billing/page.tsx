@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { getSessionUser } from "@/lib/insforge";
+import { getSessionState } from "@/lib/insforge";
 import { getProfileByUserId } from "@/lib/billing";
 import { Breadcrumbs } from "@/components/breadcrumbs";
 import PortalButton from "./PortalButton";
@@ -23,11 +23,44 @@ function formatDate(value: string | null): string {
   }
 }
 
-export default async function BillingPage() {
-  const user = await getSessionUser();
+function displayPlanName(profile: Awaited<ReturnType<typeof getProfileByUserId>>) {
+  if (profile?.current_plan_name) return profile.current_plan_name;
+  if (profile?.subscription_status && profile.subscription_status !== "inactive") {
+    return "managed externally";
+  }
+  return "free";
+}
+
+export default async function BillingPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ status?: string }>;
+}) {
+  const params = await searchParams;
+  const { user, unavailable } = await getSessionState();
+  if (unavailable) {
+    return (
+      <>
+        <Breadcrumbs
+          items={[
+            { label: "Dashboard", href: "/app" },
+            { label: "Billing" },
+          ]}
+        />
+        <section>
+          <h1>Billing</h1>
+          <p className="auth-error">
+            Billing is temporarily unavailable because we could not verify your session.
+          </p>
+          <p>
+            <Link href="/app">Back to dashboard</Link>
+          </p>
+        </section>
+      </>
+    );
+  }
   if (!user) redirect("/login?next=/billing");
 
-  // REL-R01: a failed profile read must render an error, not hard-500.
   let profile = null;
   try {
     profile = await getProfileByUserId(user.id);
@@ -64,15 +97,16 @@ export default async function BillingPage() {
       />
       <section>
         <h1>Billing</h1>
-        <p className="lede">
-          Your subscription status, synced from Stripe.
-        </p>
+        <p className="lede">Your subscription status, synced from Stripe.</p>
+        {params.status === "success" ? (
+          <p role="status">Checkout complete. Your billing status will refresh automatically.</p>
+        ) : null}
       </section>
 
       <section className="cards">
         <article className="card">
           <p className="card-label">Plan</p>
-          <p className="card-value">{profile?.current_plan_name ?? "free"}</p>
+          <p className="card-value">{displayPlanName(profile)}</p>
         </article>
         <article className="card">
           <p className="card-label">Status</p>
@@ -90,8 +124,7 @@ export default async function BillingPage() {
           <PortalButton />
         ) : (
           <p>
-            No subscription on file yet. Subscribe from the{" "}
-            <Link href="/pricing">pricing page</Link>.
+            No subscription on file yet. Subscribe from the <Link href="/pricing">pricing page</Link>.
           </p>
         )}
         <p style={{ marginTop: "1rem" }}>

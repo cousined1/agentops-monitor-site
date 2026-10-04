@@ -113,14 +113,18 @@ export async function PATCH(request: NextRequest) {
   if (!body.id || typeof body.is_active !== "boolean") {
     return NextResponse.json({ error: "Invalid body" }, { status: 400 });
   }
-  const { error } = await insforge.database
+  const { data, error } = await insforge.database
     .from("api_keys")
     .update({ is_active: body.is_active })
     .eq("id", body.id)
-    .eq("user_id", user.id);
+    .eq("user_id", user.id)
+    .select("id");
   if (error) {
     console.error("[api-keys/PATCH] update failed:", error.message);
     return NextResponse.json({ error: "Could not update the API key." }, { status: 500 });
+  }
+  if (!Array.isArray(data) || data.length === 0) {
+    return NextResponse.json({ error: "API key not found." }, { status: 404 });
   }
   return NextResponse.json({ ok: true });
 }
@@ -133,14 +137,18 @@ export async function DELETE(request: NextRequest) {
   const body = await readJsonBody<{ id?: string }>(request);
   if (body instanceof NextResponse) return body;
   if (!body.id) return NextResponse.json({ error: "Missing id" }, { status: 400 });
-  const { error } = await insforge.database
+  const { data, error } = await insforge.database
     .from("api_keys")
     .delete()
     .eq("id", body.id)
-    .eq("user_id", user.id);
+    .eq("user_id", user.id)
+    .select("id");
   if (error) {
     console.error("[api-keys/DELETE] delete failed:", error.message);
     return NextResponse.json({ error: "Could not delete the API key." }, { status: 500 });
+  }
+  if (!Array.isArray(data) || data.length === 0) {
+    return NextResponse.json({ error: "API key not found." }, { status: 404 });
   }
   return NextResponse.json({ ok: true });
 }

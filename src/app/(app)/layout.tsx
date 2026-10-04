@@ -1,11 +1,37 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { getSessionUser } from "@/lib/insforge";
+import { getSessionState } from "@/lib/insforge";
 
 export const dynamic = "force-dynamic";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
-  const user = await getSessionUser();
+  const { user, unavailable } = await getSessionState();
+  if (unavailable) {
+    return (
+      <>
+        <header className="topbar">
+          <div className="topbar-inner">
+            <Link className="brand" href="/app">
+              <span aria-hidden="true">▌▐</span>
+              <span>AgentOps Monitor</span>
+            </Link>
+          </div>
+        </header>
+        <main className="dashboard">
+          <section>
+            <h1>Authentication is temporarily unavailable</h1>
+            <p className="auth-error">
+              We could not verify your session right now. Please refresh in a moment.
+            </p>
+            <p>
+              <Link href="/">Back to homepage</Link>
+            </p>
+          </section>
+        </main>
+      </>
+    );
+  }
+
   if (!user) {
     redirect("/login?next=/app");
   }
