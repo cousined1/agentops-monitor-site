@@ -53,9 +53,9 @@ describe("leads endpoint hardening (DELTA-003 + audit persistence)", () => {
     expect(body.id).toEqual(expect.any(String));
     // The lead must reach storage, not just a log line.
     expect(insertRow).toHaveBeenCalledTimes(1);
-    expect(insertRow).toHaveBeenCalledWith(
+    expect(insertRow).toHaveBeenCalledWith([
       expect.objectContaining({ email: "lead@example.com", company: "Acme Corp", source: "chat" }),
-    );
+    ]);
   });
 
   it("returns 503 when the lead cannot be stored instead of reporting success", async () => {

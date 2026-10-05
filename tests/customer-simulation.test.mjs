@@ -164,13 +164,13 @@ describe("F-08 customer journey simulation: 7-step lifecycle", () => {
     expect(body.id).toBeTruthy();
     // The lead reached durable storage with the visitor's actual details.
     expect(insert).toHaveBeenCalledTimes(1);
-    expect(insert).toHaveBeenCalledWith(
+    expect(insert).toHaveBeenCalledWith([
       expect.objectContaining({
         email: "journey.customer@example.com",
         company: "Acme AI Corp",
         source: "landing_chatbot",
       }),
-    );
+    ]);;
   });
 
   it("Step 2: visitor signs up and the profile row is provisioned via upsert", () => {

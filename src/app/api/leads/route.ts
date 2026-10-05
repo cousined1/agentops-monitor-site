@@ -157,13 +157,15 @@ export async function POST(request: NextRequest) {
       baseUrl: env.NEXT_PUBLIC_INSFORGE_URL,
       apiKey: env.INSFORGE_API_KEY,
     });
-    const { error } = await admin.database.from("leads").insert({
-      email,
-      company: company ?? null,
-      source: source ?? null,
-      product: product ?? null,
-      conversation: conversation ?? null,
-    });
+    const { error } = await admin.database.from("leads").insert([
+      {
+        email,
+        company: company ?? null,
+        source: source ?? null,
+        product: product ?? null,
+        conversation: conversation ?? null,
+      },
+    ]);
     if (error) {
       persistError = error.message;
     } else {
