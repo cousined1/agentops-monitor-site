@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
 import { appEnv } from "@/lib/env";
+import { apiError } from "@/lib/api-error";
 import {
   getAdmin,
   getPlanByPriceId,
@@ -122,40 +123,25 @@ export async function POST(request: NextRequest) {
   } catch (err) {
     // API-013: env schema failures must not leak their details.
     console.error("[stripe-webhook] env validation failed:", err instanceof Error ? err.message : err);
-    return NextResponse.json(
-      { error: { message: "Webhook is not configured.", code: "webhook_not_configured" } },
-      { status: 500 },
-    );
+    return apiError(500, "Webhook is not configured.", "webhook_not_configured");
   }
 
   if (!secret) {
-    return NextResponse.json(
-      { error: { message: "STRIPE_WEBHOOK_SECRET is not configured.", code: "webhook_not_configured" } },
-      { status: 500 },
-    );
+    return apiError(500, "STRIPE_WEBHOOK_SECRET is not configured.", "webhook_not_configured");
   }
 
   const signature = request.headers.get("stripe-signature");
   if (!signature) {
-    return NextResponse.json(
-      { error: { message: "Missing stripe-signature header.", code: "missing_signature" } },
-      { status: 400 },
-    );
+    return apiError(400, "Missing stripe-signature header.", "missing_signature");
   }
 
   const declaredLength = Number(request.headers.get("content-length") ?? "0");
   if (declaredLength > MAX_WEBHOOK_BODY_BYTES) {
-    return NextResponse.json(
-      { error: { message: "Body too large.", code: "payload_too_large" } },
-      { status: 413 },
-    );
+    return apiError(413, "Body too large.", "payload_too_large");
   }
   const rawBody = await readBodyCapped(request, MAX_WEBHOOK_BODY_BYTES);
   if (rawBody === null) {
-    return NextResponse.json(
-      { error: { message: "Body too large.", code: "payload_too_large" } },
-      { status: 413 },
-    );
+    return apiError(413, "Body too large.", "payload_too_large");
   }
 
   let event: Stripe.Event;
@@ -166,10 +152,7 @@ export async function POST(request: NextRequest) {
       "[stripe-webhook] signature verification failed:",
       err instanceof Error ? err.message : err,
     );
-    return NextResponse.json(
-      { error: { message: "Signature verification failed.", code: "invalid_signature" } },
-      { status: 400 },
-    );
+    return apiError(400, "Signature verification failed.", "invalid_signature");
   }
 
   // DELTA-005: at-least-once with dedup. Verified events are recorded in
@@ -278,9 +261,10 @@ export async function POST(request: NextRequest) {
     // Silently 200-ing here would drop the event permanently.
     const message = err instanceof Error ? err.message : String(err);
     console.error(`[stripe-webhook] handler error for ${event.type} (id=${event.id}): ${message}`);
-    return NextResponse.json(
-      { error: { message: "Webhook handler failed; the event will be retried.", code: "webhook_handler_failed" } },
-      { status: 500 },
+    return apiError(
+      500,
+      "Webhook handler failed; the event will be retried.",
+      "webhook_handler_failed",
     );
   }
 

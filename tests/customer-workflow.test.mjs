@@ -89,7 +89,9 @@ describe("Customer MVP Workflow Simulation", () => {
     });
 
     mockFrom.mockReturnValue({
-      insert: vi.fn().mockResolvedValue({ error: null }),
+      insert: vi.fn(() => ({
+        select: vi.fn(async () => ({ data: [{ id: "key-mvp-1" }], error: null })),
+      })),
     });
 
     const { POST } = await import("../src/app/api/api-keys/route.ts");

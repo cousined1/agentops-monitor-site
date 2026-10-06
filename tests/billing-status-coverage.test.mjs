@@ -74,7 +74,7 @@ describe("billing status route coverage closure", () => {
 
       expect(response.status).toBe(503);
       await expect(response.json()).resolves.toEqual({
-        error: "Service temporarily unavailable",
+        error: { message: "Service temporarily unavailable", code: "profile_unavailable" },
       });
     } finally {
       errSpy.mockRestore();
@@ -92,7 +92,7 @@ describe("billing status route coverage closure", () => {
 
       expect(response.status).toBe(503);
       await expect(response.json()).resolves.toEqual({
-        error: "Service temporarily unavailable",
+        error: { message: "Service temporarily unavailable", code: "profile_unavailable" },
       });
     } finally {
       errSpy.mockRestore();

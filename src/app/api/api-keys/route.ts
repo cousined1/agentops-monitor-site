@@ -4,6 +4,7 @@ import { getServerClient } from "@/lib/insforge";
 import { createAdminClient } from "@insforge/sdk";
 import { appEnv } from "@/lib/env";
 import { generateApiKey } from "@/lib/api-keys";
+import { apiError } from "@/lib/api-error";
 
 export const runtime = "nodejs";
 
@@ -17,20 +18,19 @@ async function requireApiUser(insforge: InsforgeClient) {
     console.error("[api-keys] auth check failed:", authError.message);
     return {
       user: null,
-      response: NextResponse.json(
-        {
-          error: {
-            message: "Authentication is temporarily unavailable. Please try again shortly.",
-            code: "auth_unavailable",
-          },
-        },
-        { status: 503 },
+      response: apiError(
+        503,
+        "Authentication is temporarily unavailable. Please try again shortly.",
+        "auth_unavailable",
       ),
     };
   }
   const user = userData?.user ?? null;
   if (!user) {
-    return { user: null, response: NextResponse.json({ error: "Unauthorized" }, { status: 401 }) };
+    return {
+      user: null,
+      response: apiError(401, "Unauthorized", "unauthorized"),
+    };
   }
   return { user, response: null };
 }
@@ -42,14 +42,14 @@ async function readKeyName(request: NextRequest): Promise<string | NextResponse>
       const json = (await request.json()) as { name?: string };
       return ((json?.name ?? "").toString().trim() || "default").slice(0, 64);
     } catch {
-      return NextResponse.json({ error: "Invalid JSON body." }, { status: 400 });
+      return apiError(400, "Invalid JSON body.", "invalid_json");
     }
   }
   try {
     const formData = await request.formData();
     return ((formData.get("name") ?? "").toString().trim() || "default").slice(0, 64);
   } catch {
-    return NextResponse.json({ error: "Invalid form body." }, { status: 400 });
+    return apiError(400, "Invalid form body.", "invalid_body");
   }
 }
 
@@ -69,21 +69,39 @@ export async function POST(request: NextRequest) {
     apiKey: env.INSFORGE_API_KEY,
   });
 
-  const { error } = await admin.database.from("api_keys").insert([
-    {
-      user_id: user.id,
-      name,
-      key_prefix: generated.prefix,
-      key_hash: generated.hash,
-    },
-  ]);
+  // API-KEY-ID: PATCH and DELETE below both require an id and no list endpoint
+  // exists, so without selecting it back the key is unrevokeable via the API.
+  const { data, error } = await admin.database
+    .from("api_keys")
+    .insert([
+      {
+        user_id: user.id,
+        name,
+        key_prefix: generated.prefix,
+        key_hash: generated.hash,
+      },
+    ])
+    .select("id");
 
   if (error) {
     // API-001: raw Postgres errors must not reach the client.
     console.error("[api-keys/POST] insert failed:", error.message);
-    return NextResponse.json(
-      { error: "Could not create the API key. Please try again." },
-      { status: 500 },
+    return apiError(
+      500,
+      "Could not create the API key. Please try again.",
+      "write_failed",
+    );
+  }
+
+  const createdId = Array.isArray(data) && data[0]?.id ? String(data[0].id) : null;
+  if (!createdId) {
+    console.error(
+      "[api-keys/POST] insert returned no id; refusing to return an unrevokeable key",
+    );
+    return apiError(
+      500,
+      "Could not create the API key. Please try again.",
+      "write_failed",
     );
   }
 
@@ -92,14 +110,14 @@ export async function POST(request: NextRequest) {
   } catch {
     // Non-fatal if invoked outside request cache context
   }
-  return NextResponse.json({ ok: true, key: generated.raw });
+  return NextResponse.json({ ok: true, key: generated.raw, id: createdId });
 }
 
 async function readJsonBody<T>(request: NextRequest): Promise<T | NextResponse> {
   try {
     return (await request.json()) as T;
   } catch {
-    return NextResponse.json({ error: "Invalid body" }, { status: 400 });
+    return apiError(400, "Invalid body", "invalid_body");
   }
 }
 
@@ -111,7 +129,7 @@ export async function PATCH(request: NextRequest) {
   const body = await readJsonBody<{ id?: string; is_active?: boolean }>(request);
   if (body instanceof NextResponse) return body;
   if (!body.id || typeof body.is_active !== "boolean") {
-    return NextResponse.json({ error: "Invalid body" }, { status: 400 });
+    return apiError(400, "Invalid body", "invalid_body");
   }
   const { data, error } = await insforge.database
     .from("api_keys")
@@ -121,10 +139,10 @@ export async function PATCH(request: NextRequest) {
     .select("id");
   if (error) {
     console.error("[api-keys/PATCH] update failed:", error.message);
-    return NextResponse.json({ error: "Could not update the API key." }, { status: 500 });
+    return apiError(500, "Could not update the API key.", "write_failed");
   }
   if (!Array.isArray(data) || data.length === 0) {
-    return NextResponse.json({ error: "API key not found." }, { status: 404 });
+    return apiError(404, "API key not found.", "not_found");
   }
   return NextResponse.json({ ok: true });
 }
@@ -136,7 +154,7 @@ export async function DELETE(request: NextRequest) {
 
   const body = await readJsonBody<{ id?: string }>(request);
   if (body instanceof NextResponse) return body;
-  if (!body.id) return NextResponse.json({ error: "Missing id" }, { status: 400 });
+  if (!body.id) return apiError(400, "Missing id", "invalid_body");
   const { data, error } = await insforge.database
     .from("api_keys")
     .delete()
@@ -145,10 +163,10 @@ export async function DELETE(request: NextRequest) {
     .select("id");
   if (error) {
     console.error("[api-keys/DELETE] delete failed:", error.message);
-    return NextResponse.json({ error: "Could not delete the API key." }, { status: 500 });
+    return apiError(500, "Could not delete the API key.", "write_failed");
   }
   if (!Array.isArray(data) || data.length === 0) {
-    return NextResponse.json({ error: "API key not found." }, { status: 404 });
+    return apiError(404, "API key not found.", "not_found");
   }
   return NextResponse.json({ ok: true });
 }

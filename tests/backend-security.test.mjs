@@ -12,6 +12,7 @@ vi.mock("next/headers", () => ({
     set: vi.fn(),
     delete: vi.fn(),
   })),
+  headers: vi.fn(async () => ({ get: vi.fn() })),
 }));
 vi.mock("@insforge/sdk/ssr", () => ({
   createAuthActions: vi.fn(() => ({
@@ -87,7 +88,9 @@ describe("backend security boundaries", () => {
 
     expect(response.status).toBe(401);
     expect(response.headers.get("location")).toBeNull();
-    await expect(response.json()).resolves.toEqual({ error: "Unauthorized" });
+    await expect(response.json()).resolves.toEqual({
+      error: { message: "Unauthorized", code: "unauthorized" },
+    });
   });
 
   it("preserves protected-route query parameters through login", async () => {
@@ -401,7 +404,9 @@ describe("F-05 duplicate-checkout guard and F-06 outage handling", () => {
     const response = await POST(request);
 
     expect(response.status).toBe(401);
-    await expect(response.json()).resolves.toEqual({ error: "Unauthorized" });
+    await expect(response.json()).resolves.toEqual({
+      error: { message: "Unauthorized", code: "unauthorized" },
+    });
   });
 
   it("F-06: error boundaries are client components with a Try again reset", async () => {

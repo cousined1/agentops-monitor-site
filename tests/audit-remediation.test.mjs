@@ -1,5 +1,5 @@
-import { describe, expect, it, vi } from "vitest";
-import { readFileSync, readdirSync } from "node:fs";
+import { describe, expect, it } from "vitest";
+import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 
 describe("Audit Remediation & Verification Suite", () => {
@@ -13,7 +13,7 @@ describe("Audit Remediation & Verification Suite", () => {
     expect(content).toMatch(/from\(\s*["']leads["']\s*\)\s*\.insert\(/);
     // A failed write must surface as 5xx, never as { status: "ok" }.
     expect(content).toMatch(/if \(!persisted\)/);
-    expect(content).toMatch(/status: 503/);
+    expect(content).toMatch(/if \(!persisted\)[\s\S]{0,240}apiError\(\s*503,/);
   });
 
   it("AUDIT-006b (LEAD LOSS): a public.leads migration exists and locks the table to project_admin", () => {
@@ -38,7 +38,6 @@ describe("Audit Remediation & Verification Suite", () => {
     // Consent Mode only binds if the default exists BEFORE the container loads.
     const pages = [
       join(repoRoot, "src", "app", "layout.tsx"),
-      join(repoRoot, "public", "index.html"),
       join(repoRoot, "public", "privacy.html"),
       join(repoRoot, "public", "cookie-policy.html"),
     ];
@@ -156,5 +155,23 @@ describe("Audit Remediation & Verification Suite", () => {
     const reqBilling = new NextRequest("https://agentopsmonitor.com/billing");
     const resBilling = await middleware(reqBilling);
     expect(resBilling.headers.get("location")).toContain("/login?next=%2Fbilling");
+  });
+
+  it("P1-5 (NO SECOND HOMEPAGE): public/index.html stays deleted and unreferenced", () => {
+    // The orphan duplicate was served at /index.html with a conflicting title and
+    // canonical, competing with / in search. Removing the file is not enough on its
+    // own - the sitemap and robots.txt must also stay silent about it, and no
+    // middleware or config entry may keep treating it as a served page.
+    expect(
+      existsSync(join(repoRoot, "public", "index.html")),
+      "public/index.html must not come back - it is a self-competing second homepage"
+    ).toBe(false);
+
+    const middlewareSrc = readFileSync(join(repoRoot, "src", "middleware.ts"), "utf8");
+    expect(middlewareSrc).not.toContain('"/index.html"');
+
+    // Never linked, never listed: an orphan that search engines can still index.
+    expect(readFileSync(join(repoRoot, "public", "sitemap.xml"), "utf8")).not.toContain("index.html");
+    expect(readFileSync(join(repoRoot, "public", "robots.txt"), "utf8")).not.toContain("index.html");
   });
 });

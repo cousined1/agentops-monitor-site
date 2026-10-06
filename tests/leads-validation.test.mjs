@@ -49,7 +49,9 @@ describe("leads route validation coverage closure", () => {
     });
 
     expect(response.status).toBe(413);
-    await expect(response.json()).resolves.toEqual({ error: "Lead payload too large." });
+    await expect(response.json()).resolves.toEqual({
+      error: { message: "Lead payload too large.", code: "payload_too_large" },
+    });
   });
 
   it("propagates a mid-stream body read failure instead of swallowing it", async () => {
@@ -75,7 +77,9 @@ describe("leads route validation coverage closure", () => {
     const response = await POST(leadRequest("{not json"));
 
     expect(response.status).toBe(400);
-    await expect(response.json()).resolves.toEqual({ error: "Invalid JSON" });
+    await expect(response.json()).resolves.toEqual({
+      error: { message: "Invalid JSON", code: "invalid_json" },
+    });
   });
 
   it("rejects a payload that fails schema validation with 400", async () => {
@@ -84,7 +88,9 @@ describe("leads route validation coverage closure", () => {
     const response = await POST(leadRequest({ company: "No Email Corp" }));
 
     expect(response.status).toBe(400);
-    await expect(response.json()).resolves.toEqual({ error: "Invalid lead payload." });
+    await expect(response.json()).resolves.toEqual({
+      error: { message: "Invalid lead payload.", code: "invalid_body" },
+    });
   });
 
   it("returns 503 when persistence throws instead of reporting success", async () => {
@@ -100,7 +106,10 @@ describe("leads route validation coverage closure", () => {
       expect(response.status).toBe(503);
       expect(response.headers.get("retry-after")).toBe("30");
       await expect(response.json()).resolves.toEqual({
-        error: "We could not record your details. Please try again in a moment.",
+        error: {
+          message: "We could not record your details. Please try again in a moment.",
+          code: "write_failed",
+        },
       });
       const logged = errSpy.mock.calls.map((c) => c.join(" ")).join("\n");
       expect(logged).toContain("lead LOST");
