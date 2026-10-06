@@ -3,6 +3,7 @@ import { createHash, randomUUID } from "node:crypto";
 import { createAdminClient } from "@insforge/sdk";
 import { z } from "zod";
 import { appEnv } from "@/lib/env";
+import { apiError } from "@/lib/api-error";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -113,30 +114,29 @@ export async function POST(request: NextRequest) {
   // API-003: reject from the declared length before buffering the body.
   const declaredLength = Number(request.headers.get("content-length") ?? "0");
   if (declaredLength > MAX_BODY_BYTES) {
-    return NextResponse.json({ error: "Lead payload too large." }, { status: 413 });
+    return apiError(413, "Lead payload too large.", "payload_too_large");
   }
   const rawBody = await readBody(request, MAX_BODY_BYTES);
   if (rawBody === null) {
-    return NextResponse.json({ error: "Lead payload too large." }, { status: 413 });
+    return apiError(413, "Lead payload too large.", "payload_too_large");
   }
 
   if (!allowRequest(clientIp(request))) {
-    return NextResponse.json(
-      { error: "Too many lead submissions; try again shortly." },
-      { status: 429, headers: { "Retry-After": "60" } },
-    );
+    return apiError(429, "Too many lead submissions; try again shortly.", "rate_limited", {
+      headers: { "Retry-After": "60" },
+    });
   }
 
   let rawJson: unknown;
   try {
     rawJson = JSON.parse(rawBody);
   } catch {
-    return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
+    return apiError(400, "Invalid JSON", "invalid_json");
   }
 
   const parsed = LeadSchema.safeParse(rawJson);
   if (!parsed.success) {
-    return NextResponse.json({ error: "Invalid lead payload." }, { status: 400 });
+    return apiError(400, "Invalid lead payload.", "invalid_body");
   }
 
   const { email, company, source, product, conversation } = parsed.data;
@@ -186,9 +186,11 @@ export async function POST(request: NextRequest) {
   if (!persisted) {
     // 503 + Retry-After: the visitor's details were NOT captured, so the
     // chatbot should offer to retry rather than repeat the 24-hour promise.
-    return NextResponse.json(
-      { error: "We could not record your details. Please try again in a moment." },
-      { status: 503, headers: { "Retry-After": "30" } },
+    return apiError(
+      503,
+      "We could not record your details. Please try again in a moment.",
+      "write_failed",
+      { headers: { "Retry-After": "30" } },
     );
   }
 

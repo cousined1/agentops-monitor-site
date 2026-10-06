@@ -45,7 +45,7 @@ describe("stripe webhook idempotency (DELTA-005)", () => {
     // Stateful ledger mock: select reflects `processed`; insert records.
     getAdmin.mockImplementation(() => ({
       database: {
-        from: vi.fn((table) => ({
+        from: vi.fn(() => ({
           select: () => ({
             eq: (_column, value) => ({
               maybeSingle: async () => (processed.has(value) ? { data: { event_id: value }, error: null } : { data: null, error: null }),

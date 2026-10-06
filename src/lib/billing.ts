@@ -1,10 +1,11 @@
 import Stripe from "stripe";
 import { createAdminClient } from "@insforge/sdk";
 import { appEnv } from "./env";
+import type { ErrorCode } from "./api-error";
 
 export class BillingConfigError extends Error {
-  code: string;
-  constructor(message: string, code = "billing_not_configured") {
+  code: ErrorCode;
+  constructor(message: string, code: ErrorCode = "billing_not_configured") {
     super(message);
     this.code = code;
   }

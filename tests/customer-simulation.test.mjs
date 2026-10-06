@@ -236,7 +236,9 @@ describe("F-08 customer journey simulation: 7-step lifecycle", () => {
     mockAuth.getCurrentUser.mockResolvedValue({
       data: { user: { id: USER.id, email: USER.email } },
     });
-    const insert = vi.fn().mockResolvedValue({ error: null });
+    const insert = vi.fn(() => ({
+      select: vi.fn(async () => ({ data: [{ id: "key-mvp-1" }], error: null })),
+    }));
     mockFrom.mockImplementation((table) => {
       expect(table).toBe("api_keys");
       return { insert };
