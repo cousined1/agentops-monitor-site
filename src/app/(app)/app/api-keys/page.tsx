@@ -14,20 +14,41 @@ export const dynamic = "force-dynamic";
 
 export default async function ApiKeysPage() {
   const insforge = await getServerClient();
-  const { data: keys } = await insforge.database
-    .from("api_keys")
-    .select("id,name,key_prefix,is_active,last_used_at,created_at")
-    .order("created_at", { ascending: false });
+  // F-06: an InsForge outage must render as an outage, not a false
+  // "No keys yet" that sends customers to recreate working keys.
+  let keys: Array<{
+    id: string;
+    name: string;
+    key_prefix: string;
+    is_active: boolean;
+    last_used_at: string | null;
+    created_at: string;
+  }> | null = null;
+  let keysError = false;
+  try {
+    const { data } = await insforge.database
+      .from("api_keys")
+      .select("id,name,key_prefix,is_active,last_used_at,created_at")
+      .order("created_at", { ascending: false });
+    keys = data;
+  } catch (error) {
+    keysError = true;
+    console.error("[app/api-keys] key listing failed:", error instanceof Error ? error.message : error);
+  }
 
   async function revokeKey(formData: FormData) {
     "use server";
     const id = (formData.get("id") ?? "").toString();
     if (!id) return;
     const server = await getServerClient();
+    const { data: userData } = await server.auth.getCurrentUser();
+    const user = userData?.user;
+    if (!user) return;
     const { error } = await server.database
       .from("api_keys")
       .update({ is_active: false })
-      .eq("id", id);
+      .eq("id", id)
+      .eq("user_id", user.id);
     if (error) throw new Error(error.message);
     revalidatePath("/app/api-keys");
   }
@@ -54,7 +75,9 @@ export default async function ApiKeysPage() {
 
       <section>
         <h2>Existing keys</h2>
-        {keys && keys.length > 0 ? (
+        {keysError ? (
+          <p className="auth-error">Could not load your API keys. Please try again shortly.</p>
+        ) : keys && keys.length > 0 ? (
           <table className="ledger">
             <thead>
               <tr>

@@ -1,27 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Privacy · AgentOps Monitor</title>
-  <meta name="description" content="Privacy notice for the AgentOps Monitor pre-launch site. Minimal data collection, no third party tracking, retention set by configured policy.">
-  <meta name="robots" content="index, follow">
-  <link rel="canonical" href="https://agentopsmonitor.com/privacy">
-  <meta property="og:title" content="Privacy · AgentOps Monitor">
-  <meta property="og:description" content="Privacy notice for the AgentOps Monitor pre-launch site.">
-  <meta property="og:type" content="article">
-  <meta property="og:url" content="https://agentopsmonitor.com/privacy">
-  <meta property="og:site_name" content="AgentOps Monitor">
-  <meta property="og:image" content="https://agentopsmonitor.com/og-image.svg">
-  <meta name="twitter:card" content="summary">
-  <meta name="twitter:title" content="Privacy · AgentOps Monitor">
-  <meta name="twitter:description" content="Privacy notice for the AgentOps Monitor pre-launch site.">
-  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' fill='%230e1116'/%3E%3Cpath d='M3 4h10M3 8h10M3 12h10' stroke='%2356d364' stroke-width='1.5'/%3E%3C/svg%3E">
-  <link rel="stylesheet" href="styles.css">
-  <style>
-    :focus-visible { outline: 2px solid #56d364; outline-offset: 2px; }
-    :focus { outline-color: #56d364; }
-  </style>
+  <!-- Consent Mode default: MUST run before the GTM loader below, or
+       tags fire with no consent signal set (AUDIT-RUN-20260930-202741). -->
   <script>
     window.dataLayer = window.dataLayer || [];
     function gtag(){dataLayer.push(arguments);}
@@ -35,38 +16,86 @@
       security_storage: "granted",
       wait_for_update: 500
     });
+    // Re-apply a stored choice here in the head, not only from
+    // /cookie-consent.js after it loads.
+    try {
+      var stored = JSON.parse(localStorage.getItem("aom_cookie_consent"));
+      if (stored && stored.categories && stored.policyVersion === "2026-08-19-v1") {
+        var c = stored.categories;
+        gtag("consent", "update", {
+          analytics_storage: c.analytics ? "granted" : "denied",
+          functionality_storage: c.preferences ? "granted" : "denied",
+          personalization_storage: c.preferences ? "granted" : "denied",
+          ad_storage: c.marketing ? "granted" : "denied",
+          ad_user_data: c.marketing ? "granted" : "denied",
+          ad_personalization: c.marketing ? "granted" : "denied"
+        });
+      }
+    } catch (e) {}
   </script>
+  <!-- Google Tag Manager -->
+  <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+  new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+  j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+  'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+  })(window,document,'script','dataLayer','GTM-KL4BW5F2');</script>
+  <!-- End Google Tag Manager -->
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Privacy · AgentOps Monitor</title>
+  <meta name="description" content="Privacy notice for AgentOps Monitor. Consent-gated Google Tag Manager, first-party lead storage, retention set by configured policy.">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://agentopsmonitor.com/privacy">
+  <meta property="og:title" content="Privacy · AgentOps Monitor">
+  <meta property="og:description" content="Privacy notice for AgentOps Monitor.">
+  <meta property="og:type" content="article">
+  <meta property="og:url" content="https://agentopsmonitor.com/privacy">
+  <meta property="og:site_name" content="AgentOps Monitor">
+  <meta property="og:image" content="https://agentopsmonitor.com/og-image.svg">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Privacy · AgentOps Monitor">
+  <meta name="twitter:description" content="Privacy notice for AgentOps Monitor.">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' fill='%230e1116'/%3E%3Cpath d='M3 4h10M3 8h10M3 12h10' stroke='%2356d364' stroke-width='1.5'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    :focus-visible { outline: 2px solid #56d364; outline-offset: 2px; }
+    :focus { outline-color: #56d364; }
+  </style>
   <script src="cookie-consent.js" defer></script>
 </head>
 <body>
+  <!-- Google Tag Manager (noscript) -->
+  <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-KL4BW5F2"
+  height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+  <!-- End Google Tag Manager (noscript) -->
   <a class="skip" href="#main">Skip to content</a>
   <header class="topbar">
     <div class="topbar-inner">
       <a class="brand" href="/">
         <span class="brand-mark" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><rect x="1.5" y="1.5" width="21" height="21" rx="5" stroke="currentColor" stroke-width="2"/><path d="M5 14.5h3l2-6.5 3 9 2.2-5.5H19" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
         <span class="brand-name">AgentOps Monitor</span>
-        <span class="brand-meta" aria-hidden="true">v0.7 · pre-launch</span>
       </a>
       <nav class="nav" aria-label="Primary">
         <a href="/#trace">Trace</a>
         <a href="/#cost">Cost</a>
-        <a href="/#install">Install</a>
-        <a href="/#integrations">Integrations</a>
-        <a href="/#pricing">Pricing</a>
+        <a href="/features">Features</a>
+        <a href="/pricing">Pricing</a>
+        <a href="/docs">Docs</a>
+        <a href="/login">Sign in</a>
       </nav>
-      <a class="cta cta-primary" href="/#install">Install the SDK</a>
+      <a class="cta cta-primary" href="/signup">Start free</a>
     </div>
   </header>
   <main id="main" class="legal">
     <section class="legal-head">
       <p class="eyebrow">Privacy</p>
       <h1>Privacy notice</h1>
-      <p class="lede">This page covers the pre-launch marketing site at agentopsmonitor.com. The AgentOps Monitor product itself is not yet shipped; this notice applies only to site visits.</p>
+      <p class="lede">This page covers the AgentOps Monitor site and services at agentopsmonitor.com. Minimal data collection, privacy by default.</p>
     </section>
 
     <section class="legal-block" data-surface="real" data-fidelity="real" aria-label="What we collect">
       <h2>What we collect</h2>
-      <p>The static site currently runs no analytics, advertising, chat, or other third party tracking scripts. The hosting platform may record standard request logs (IP, user agent, request path, response status) for operational security and abuse detection. The site stores your privacy choice in local browser storage so it can respect that choice on later visits.</p>
+      <p>The site's only third party technology is Google Tag Manager, which loads on every page. Google Consent Mode sets its optional storage categories (analytics, advertising, personalisation, functionality) to denied before the container loads, and the container only runs tags for categories you have allowed, so declining means no optional Google storage is used. No advertising or marketing pixel is currently configured. The site hosts a first party chat assistant: when you choose to submit a lead through it, we receive the details you provide (email address, company name) together with the conversation transcript, which we store in a dedicated first-party lead store and use to respond to your enquiry. The hosting platform may record standard request logs (IP, user agent, request path, response status) for operational security and abuse detection. The site stores your privacy choice in local browser storage so it can respect that choice on later visits.</p>
       <pre><code>// Example privacy preference payload
 {
   "analytics": false,
@@ -77,7 +106,7 @@
 
     <section class="legal-block">
       <h2>How we use the information</h2>
-      <p>Request logs are used to keep the site available, detect malicious traffic, and investigate incidents. Logs are retained by the hosting platform on its standard schedule and are not sold or shared.</p>
+      <p>Request logs are used to keep the site available, detect malicious traffic, and investigate incidents. Chat lead submissions (email address, company name, and the conversation transcript) are used to respond to your enquiry and are kept only as long as needed for that purpose. Neither is sold or shared.</p>
     </section>
 
     <section class="legal-block">
@@ -87,25 +116,25 @@
 
     <section class="legal-block">
       <h2>Data retention</h2>
-      <p>Request log retention follows the hosting platform default. The product audit trail, once shipped, will be retained according to the configured policy window in each workspace.</p>
+      <p>Request log retention follows the hosting platform default. Chat lead submissions are now stored in a dedicated first-party lead store (the details you submit plus the conversation transcript, with a submission timestamp) rather than only in hosting logs. Leads are used to respond to your enquiry and are deleted on request; a fixed automated deletion schedule is on our remediation list. The product audit trail, once shipped, will be retained according to the configured policy window in each workspace.</p>
     </section>
 
     <section class="legal-block">
       <h2>Your rights under GDPR and similar laws</h2>
-      <p>If you are in the European Economic Area, the United Kingdom, California, or another jurisdiction with similar rights, you can request access to or deletion of any personal data held in request logs. Contact the address below with the request and a timestamp or IP range.</p>
+      <p>If you are in the European Economic Area, the United Kingdom, California, or another jurisdiction with similar rights, you can request access to or deletion of any personal data held in request logs or chat lead submissions. Contact the address below with the request and, for chat leads, the email address you submitted.</p>
     </section>
 
     <section class="legal-block">
       <h2>Contact</h2>
       <p>Privacy questions: <a href="mailto:support@agentopsmonitor.com">support@agentopsmonitor.com</a>.</p>
-      <p>This notice is a pre-launch draft and will be revised when the product ships.</p>
+      <p>This notice is effective as of September 2026.</p>
     </section>
 
     <p class="legal-back"><a href="/">Back to the site</a></p>
   </main>
   <footer class="footer">
     <div class="footer-inner">
-      <p>AgentOps Monitor · pre-launch · concepts shown are concept renderings built from the shipping data model.</p>
+      <p>AgentOps Monitor · Observability for AI agents in production.</p>
       <p class="footer-meta"><a href="/cookie-policy">Cookie Policy</a> · <button class="footer-control" type="button" data-cookie-preferences>Cookie Preferences</button> · <a href="/">top</a></p>
     </div>
   </footer>

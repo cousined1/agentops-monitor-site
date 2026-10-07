@@ -38,3 +38,8 @@ variants/*/screenshot.png/
 
 # TypeScript incremental build cache
 *.tsbuildinfo
+# Local audit artifacts (AUDIT-RUN-20260915-P0REM)
+audit/
+
+# Windows redirect artifact
+nul

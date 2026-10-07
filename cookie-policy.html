@@ -1,6 +1,13 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+  <!-- Google Tag Manager -->
+  <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+  new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+  j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+  'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+  })(window,document,'script','dataLayer','GTM-KL4BW5F2');</script>
+  <!-- End Google Tag Manager -->
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Cookie Policy · AgentOps Monitor</title>
@@ -39,29 +46,33 @@
   <script src="cookie-consent.js" defer></script>
 </head>
 <body>
+  <!-- Google Tag Manager (noscript) -->
+  <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-KL4BW5F2"
+  height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+  <!-- End Google Tag Manager (noscript) -->
   <a class="skip" href="#main">Skip to content</a>
   <header class="topbar">
     <div class="topbar-inner">
       <a class="brand" href="/">
         <span class="brand-mark" aria-hidden="true">▌▐</span>
         <span class="brand-name">AgentOps Monitor</span>
-        <span class="brand-meta" aria-hidden="true">v0.7 · pre-launch</span>
       </a>
       <nav class="nav" aria-label="Primary">
         <a href="/#trace">Trace</a>
         <a href="/#cost">Cost</a>
-        <a href="/#install">Install</a>
-        <a href="/#integrations">Integrations</a>
-        <a href="/#pricing">Pricing</a>
+        <a href="/features">Features</a>
+        <a href="/pricing">Pricing</a>
+        <a href="/docs">Docs</a>
+        <a href="/login">Sign in</a>
       </nav>
-      <a class="cta cta-primary" href="/#install">Install the SDK</a>
+      <a class="cta cta-primary" href="/signup">Start free</a>
     </div>
   </header>
   <main id="main" class="legal">
     <section class="legal-head" data-surface="real" data-fidelity="real" aria-label="Cookie policy overview" data-proof-source="cookie-inventory">
       <p class="eyebrow">Policy version 2026-08-19-v1</p>
       <h1>Cookie policy</h1>
-      <p class="lede">This policy lists the cookies, browser storage, and third party scripts used by the pre-launch site at agentopsmonitor.com.</p>
+      <p class="lede">This policy lists the cookies, browser storage, and third party scripts used by the AgentOps Monitor site at agentopsmonitor.com.</p>
     </section>
 
     <section class="legal-block" data-surface="real" data-fidelity="real" aria-label="Current technology inventory" data-proof-source="cookie-inventory">
@@ -73,17 +84,19 @@
             <tr><td><code>aom_cookie_consent</code></td><td>strictly necessary</td><td>Stores categories, timestamp, policy version, region label, GPC state, and how the choice was made.</td><td>Until browser storage is cleared or the policy version changes.</td></tr>
             <tr><td>Hosting request logs</td><td>strictly necessary</td><td>Security, abuse prevention, availability, and incident investigation. These are server logs, not browser cookies.</td><td>Hosting platform schedule.</td></tr>
             <tr><td>Google Consent Mode state</td><td>strictly necessary</td><td>Defaults optional Google storage to denied. No Google Analytics, Ads, or Tag Manager script is currently loaded.</td><td>Current page view.</td></tr>
+            <tr><td><code>aom-chatbot-state</code></td><td>strictly necessary</td><td>Remembers whether the chat assistant panel is open so the widget behaves consistently.</td><td>Until browser storage is cleared.</td></tr>
+            <tr><td><code>aom-chatbot-lead</code></td><td>preferences</td><td>Remembers the details you typed into the chat assistant (email, company) so you do not have to re-enter them. Only written after you allow preferences storage; sending the lead itself is always your choice.</td><td>Until browser storage is cleared.</td></tr>
           </tbody>
         </table>
       </div>
-      <p>No analytics, preference, marketing, advertising, chat, pixel, or third party font technology is currently installed.</p>
+      <p>No third party analytics, marketing, advertising, pixel, or font technology is currently installed. The chat assistant is first party: when you submit a lead it sends the details you provided, including the conversation transcript, to our own <code>/api/leads</code> endpoint, where they are recorded in server logs (see the <a href="/privacy">Privacy Notice</a>).</p>
     </section>
 
     <section class="legal-block">
       <h2>Categories</h2>
       <p><strong>Strictly necessary:</strong> supports security and remembers your privacy choice. It does not require opt-in.</p>
       <p><strong>Analytics:</strong> would measure site use and performance. It is off by default and no analytics provider is currently installed.</p>
-      <p><strong>Preferences:</strong> would remember optional interface settings. It is off by default and no optional preference storage is currently installed.</p>
+      <p><strong>Preferences:</strong> remembers optional interface settings, such as the chat assistant lead details. It is off by default: the chat assistant only writes preference storage after you allow it.</p>
       <p><strong>Marketing:</strong> would support advertising or cross-site measurement. It is off by default and no marketing provider is currently installed.</p>
     </section>
 
@@ -103,7 +116,7 @@
   </main>
   <footer class="footer">
     <div class="footer-inner">
-      <p>AgentOps Monitor · pre-launch · policy version 2026-08-19-v1.</p>
+      <p>AgentOps Monitor · policy version 2026-08-19-v1.</p>
       <p class="footer-meta"><a href="/privacy">Privacy</a> · <button class="footer-control" type="button" data-cookie-preferences>Cookie Preferences</button> · <a href="/">top</a></p>
     </div>
   </footer>

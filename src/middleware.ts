@@ -18,6 +18,8 @@ const PUBLIC_PATHS = new Set([
   "/cookie-policy.html",
   "/robots.txt",
   "/sitemap.xml",
+  "/llms.txt",
+  "/llms-full.txt",
   "/og-image.svg",
   "/styles.css",
   "/index.html",
@@ -25,6 +27,7 @@ const PUBLIC_PATHS = new Set([
   "/aom-chatbot.js",
   "/login",
   "/signup",
+  "/not-found",
   "/api/health",
   "/api/auth/refresh",
   "/api/auth/sign-out",
@@ -50,9 +53,23 @@ export async function middleware(request: NextRequest) {
   }
   const accessToken = session?.accessToken ?? null;
 
-  if (PUBLIC_PATHS.has(pathname)) return response;
+  const isProtectedPath =
+    pathname.startsWith("/app") ||
+    pathname === "/billing" ||
+    pathname.startsWith("/billing/") ||
+    (pathname.startsWith("/api/") && !PUBLIC_PATHS.has(pathname));
+
+  if (!isProtectedPath) return response;
 
   if (!accessToken) {
+    // REL-008: API consumers can't follow HTML redirects — return a JSON 401
+    // so client-side 401 handling (SubscribeButton, PortalButton) works.
+    if (pathname.startsWith("/api/")) {
+      return NextResponse.json(
+        { error: "Unauthorized" },
+        { status: 401 },
+      );
+    }
     const url = request.nextUrl.clone();
     url.pathname = "/login";
     url.search = "";

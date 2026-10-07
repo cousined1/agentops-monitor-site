@@ -1,0 +1,60 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  # Dummy values ONLY so `next build` can import src/lib/insforge.ts and
+  # prerender src/app/page.tsx (which calls InsForge inside try/catch).
+  # These are placeholders, not secrets, and reach no real backend.
+  NEXT_PUBLIC_INSFORGE_URL: https://backend.example.invalid
+  NEXT_PUBLIC_INSFORGE_ANON_KEY: ci-dummy-anon-key-0123456789abcdef
+  INSFORGE_API_KEY: ci-dummy-admin-key-0123456789abcdef
+  INGEST_RATE_LIMIT_PER_MIN: "600"
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Install (lockfile-exact)
+        run: npm ci
+
+      - name: Production dependency audit (blocking)
+        # Blocking gate covers the production dependency surface only: the
+        # dev-only eslint chain (braces via eslint-config-next) carries
+        # GHSA-vfj7-8cjw-p6xm, which affects every published braces version
+        # (3.0.3 is latest) and has no production dependency path — accepted risk.
+        run: npm audit --omit=dev --audit-level=high
+
+      - name: Full dependency audit (informational; dev-only braces DoS advisory has no patched release)
+        run: npm audit --audit-level=high
+        continue-on-error: true
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Unit tests and per-file coverage gate
+        run: npm test -- --coverage
+
+      - name: Build
+        run: npm run build
+
+      # Optional: enable after adding eslint.config.mjs (see audit/fix-proposal-p0.md 2d).
+      # - name: Lint
+      #   run: npm run lint

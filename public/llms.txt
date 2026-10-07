@@ -1,0 +1,27 @@
+# AgentOps Monitor (agentopsmonitor.com)
+> Production-grade observability, telemetry, and security monitoring for multi-agent AI systems, LLM pipelines, and autonomous workflows.
+
+AgentOps Monitor provides real-time telemetry, OpenTelemetry-compatible tracing, cost and token tracking, security policy guardrails, and anomaly alerts for autonomous AI agent networks.
+
+## Core Capabilities
+- **Multi-Agent Distributed Tracing**: Track parent-child agent workflows, tool execution trees, and task dependencies with sub-millisecond trace ingestion.
+- **Cost & Token Intelligence**: Granular per-session, per-model, and per-tool cost analytics with proactive budget exhaustion and runaway loop circuit breakers.
+- **Security & Threat Detection**: Detect prompt injection, data exfiltration, loop runaway states, and unapproved tool access with automated killswitches.
+- **Framework & SDK Support**: Native integration with LangChain, AutoGen, CrewAI, LlamaIndex, OpenAI Swarm, and standard OpenTelemetry OTLP collectors.
+
+## Key Resources
+- [Home & Platform Overview](https://agentopsmonitor.com/)
+- [Features & Capabilities](https://agentopsmonitor.com/features)
+- [Pricing & Plans](https://agentopsmonitor.com/pricing)
+- [Documentation & Integration Guides](https://agentopsmonitor.com/docs)
+- [Framework Integrations](https://agentopsmonitor.com/integrations)
+- [Blog & Technical Deep Dives](https://agentopsmonitor.com/blog)
+- [About AgentOps Monitor](https://agentopsmonitor.com/about)
+- [Contact & Enterprise Support](https://agentopsmonitor.com/contact)
+
+## Quick Start (plain HTTPS ingestion)
+Ingestion is a single authenticated HTTPS endpoint. Create an API key (prefix `aom_live_`) under Account -> API keys, then POST a JSON trace:
+- Python: `requests.post("https://agentopsmonitor.com/api/ingest", headers={"Authorization": "Bearer aom_live_..."}, json={...})`
+- Any other stack: send the same JSON body with the same `Authorization: Bearer aom_live_...` header.
+
+Trace schema and error codes: see [Documentation & Integration Guides](https://agentopsmonitor.com/docs).

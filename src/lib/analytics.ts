@@ -1,4 +1,4 @@
-export const GTM_ID = process.env.NEXT_PUBLIC_GTM_ID;
+export const GTM_ID = process.env.NEXT_PUBLIC_GTM_ID ?? "GTM-KL4BW5F2";
 
 export const ANALYTICS_EVENTS = {
   SIGNUP_STARTED: "signup_started",

@@ -29,12 +29,13 @@ export default function HelpPage() {
       </section>
 
       <section>
-        <h2>How do I install the SDK?</h2>
+        <h2>How do I send traces?</h2>
         <p>
-          One command. See the <a href="/docs">docs</a> for the install snippet and the full reference.
+          No package install. Post JSON to <code>POST /api/ingest</code> with{" "}
+          <code>Authorization: Bearer aom_live_...</code>. See the{" "}
+          <a href="/docs">docs</a> for the Python <code>requests</code> snippet and the full
+          reference.
         </p>
-        <pre className="install"><code>pip install agentops-monitor
-agentops_monitor.init(api_key="aom_live_...")</code></pre>
       </section>
 
       <section>

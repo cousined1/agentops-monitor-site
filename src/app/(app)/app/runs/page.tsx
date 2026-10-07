@@ -11,13 +11,35 @@ export const metadata: Metadata = {
 
 export const dynamic = "force-dynamic";
 
-export default async function RunsPage() {
+const PAGE_SIZE = 50;
+
+export default async function RunsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ page?: string }>;
+}) {
+  const params = await searchParams;
+  const requestedPage = Number.parseInt(params.page ?? "1", 10);
+  const page = Number.isFinite(requestedPage) && requestedPage > 0 ? requestedPage : 1;
+  const offset = (page - 1) * PAGE_SIZE;
+
   const insforge = await getServerClient();
-  const { data: runs } = await insforge.database
-    .from("runs")
-    .select("id,external_id,agent_name,status,started_at,ended_at,duration_ms,tokens_in,tokens_out,cost_usd,span_count")
-    .order("started_at", { ascending: false })
-    .limit(100);
+  // PERF-006: page through runs instead of a hard 100-row cap with no total.
+  const [runsResult, countResult] = await Promise.all([
+    insforge.database
+      .from("runs")
+      .select("id,external_id,agent_name,status,started_at,ended_at,duration_ms,tokens_in,tokens_out,cost_usd,span_count")
+      .order("started_at", { ascending: false })
+      .range(offset, offset + PAGE_SIZE - 1),
+    insforge.database.from("runs").select("id", { count: "exact", head: true }),
+  ]);
+  if (runsResult.error) {
+    console.error("[app/runs] list query failed:", runsResult.error.message);
+  }
+  const runs = runsResult.error ? null : runsResult.data;
+  const total = countResult.count ?? 0;
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  const dbError = runsResult.error ? runsResult.error.message : null;
 
   return (
     <>
@@ -31,6 +53,12 @@ export default async function RunsPage() {
         <h1>Runs</h1>
         <p className="lede">Every agent run ingested by your SDK.</p>
       </section>
+
+      {dbError ? (
+        <section>
+          <p className="auth-error">Could not load runs from the database.</p>
+        </section>
+      ) : null}
 
       <section>
         {runs && runs.length > 0 ? (
@@ -67,6 +95,17 @@ export default async function RunsPage() {
         ) : (
           <p>No runs yet.</p>
         )}
+      </section>
+
+      <section>
+        <p>
+          Page {page} of {totalPages} · {total} run{total === 1 ? "" : "s"} total{" "}
+        </p>
+        <p>
+          {page > 1 ? <Link href={`/app/runs?page=${page - 1}`}>Previous</Link> : <span>Previous</span>}
+          {" · "}
+          {page < totalPages ? <Link href={`/app/runs?page=${page + 1}`}>Next</Link> : <span>Next</span>}
+        </p>
       </section>
     </>
   );

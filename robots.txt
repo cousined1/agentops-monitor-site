@@ -1,4 +1,49 @@
 User-agent: *
 Allow: /
+Disallow: /app/
+Disallow: /billing/
+Disallow: /api/
+
+User-agent: GPTBot
+Allow: /
+Disallow: /app/
+Disallow: /billing/
+Disallow: /api/
+
+User-agent: ClaudeBot
+Allow: /
+Disallow: /app/
+Disallow: /billing/
+Disallow: /api/
+
+User-agent: PerplexityBot
+Allow: /
+Disallow: /app/
+Disallow: /billing/
+Disallow: /api/
+
+User-agent: Google-Extended
+Allow: /
+Disallow: /app/
+Disallow: /billing/
+Disallow: /api/
+
+User-agent: Applebot-Extended
+Allow: /
+Disallow: /app/
+Disallow: /billing/
+Disallow: /api/
+
+User-agent: anthropic-ai
+Allow: /
+Disallow: /app/
+Disallow: /billing/
+Disallow: /api/
+
+User-agent: CCBot
+Allow: /
+Disallow: /app/
+Disallow: /billing/
+Disallow: /api/
 
 Sitemap: https://agentopsmonitor.com/sitemap.xml

@@ -1,10 +1,49 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
+  <!-- Consent Mode default: MUST run before the GTM loader below, or
+       tags fire with no consent signal set (AUDIT-RUN-20260930-202741). -->
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag("consent", "default", {
+      ad_storage: "denied",
+      analytics_storage: "denied",
+      ad_user_data: "denied",
+      ad_personalization: "denied",
+      functionality_storage: "denied",
+      personalization_storage: "denied",
+      security_storage: "granted",
+      wait_for_update: 500
+    });
+    // Re-apply a stored choice here in the head, not only from
+    // /cookie-consent.js after it loads.
+    try {
+      var stored = JSON.parse(localStorage.getItem("aom_cookie_consent"));
+      if (stored && stored.categories && stored.policyVersion === "2026-08-19-v1") {
+        var c = stored.categories;
+        gtag("consent", "update", {
+          analytics_storage: c.analytics ? "granted" : "denied",
+          functionality_storage: c.preferences ? "granted" : "denied",
+          personalization_storage: c.preferences ? "granted" : "denied",
+          ad_storage: c.marketing ? "granted" : "denied",
+          ad_user_data: c.marketing ? "granted" : "denied",
+          ad_personalization: c.marketing ? "granted" : "denied"
+        });
+      }
+    } catch (e) {}
+  </script>
+  <!-- Google Tag Manager -->
+  <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+  new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+  j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+  'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+  })(window,document,'script','dataLayer','GTM-KL4BW5F2');</script>
+  <!-- End Google Tag Manager -->
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>AgentOps Monitor · Observability for AI Agents in Production</title>
-  <meta name="description" content="Trace every tool call, govern spend, audit every decision. Pre-launch B2B observability for AI agents.">
+  <meta name="description" content="Trace every tool call, govern spend, audit every decision. Observability for AI agents in production.">
   <meta name="robots" content="index, follow">
   <meta name="googlebot" content="index, follow">
   <meta property="og:title" content="AgentOps Monitor - Observability for AI Agents">
@@ -24,20 +63,6 @@
   <link rel="canonical" href="https://agentopsmonitor.com/">
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' fill='%230e1116'/%3E%3Cpath d='M3 4h10M3 8h10M3 12h10' stroke='%2356d364' stroke-width='1.5'/%3E%3C/svg%3E">
   <link rel="stylesheet" href="styles.css">
-  <script>
-    window.dataLayer = window.dataLayer || [];
-    function gtag(){dataLayer.push(arguments);}
-    gtag("consent", "default", {
-      ad_storage: "denied",
-      analytics_storage: "denied",
-      ad_user_data: "denied",
-      ad_personalization: "denied",
-      functionality_storage: "denied",
-      personalization_storage: "denied",
-      security_storage: "granted",
-      wait_for_update: 500
-    });
-  </script>
   <script src="cookie-consent.js" defer></script>
   <style>
     :focus-visible { outline: 2px solid #56d364; outline-offset: 2px; }
@@ -51,7 +76,8 @@
     "url": "https://agentopsmonitor.com/",
     "applicationCategory": "DeveloperApplication",
     "operatingSystem": "Linux, macOS, Windows",
-    "description": "Pre-launch B2B observability for AI agents. Trace every tool call, govern spend, audit every decision.",
+    "description": "Observability for AI agents in production. Trace every tool call, govern spend, audit every decision.",
+    "softwareVersion": "0.1.0-alpha",
     "offers": {
       "@type": "Offer",
       "price": "0",
@@ -72,6 +98,20 @@
       "email": "support@agentopsmonitor.com",
       "contactType": "customer support"
     }
+  }
+  </script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": [
+      {
+        "@type": "ListItem",
+        "position": 1,
+        "name": "Home",
+        "item": "https://agentopsmonitor.com/"
+      }
+    ]
   }
   </script>
   <script type="application/ld+json">
@@ -116,23 +156,27 @@
   </script>
 </head>
 <body>
+  <!-- Google Tag Manager (noscript) -->
+  <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-KL4BW5F2"
+  height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+  <!-- End Google Tag Manager (noscript) -->
   <a class="skip" href="#main">Skip to content</a>
 
   <header class="topbar">
     <div class="topbar-inner">
-      <a class="brand" href="#main">
+      <a class="brand" href="/">
         <span class="brand-mark" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><rect x="1.5" y="1.5" width="21" height="21" rx="5" stroke="currentColor" stroke-width="2"/><path d="M5 14.5h3l2-6.5 3 9 2.2-5.5H19" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
         <span class="brand-name">AgentOps Monitor</span>
-        <span class="brand-meta" aria-hidden="true">v0.7 · pre-launch</span>
       </a>
       <nav class="nav" aria-label="Primary">
         <a href="#trace">Trace</a>
         <a href="#cost">Cost</a>
-        <a href="#install">Install</a>
-        <a href="#integrations">Integrations</a>
-        <a href="#pricing">Pricing</a>
+        <a href="/features">Features</a>
+        <a href="/pricing">Pricing</a>
+        <a href="/docs">Docs</a>
+        <a href="/login">Sign in</a>
       </nav>
-      <a class="cta cta-primary" href="#install">Install the SDK</a>
+      <a class="cta cta-primary" href="/signup">Start free</a>
     </div>
   </header>
 
@@ -145,8 +189,8 @@
           <h1 id="hero-h">Find the call that cost you four hundred dollars.</h1>
           <p class="lede">AgentOps Monitor replays every tool call, every LLM decision, every dollar an agent spends, so an on-call engineer at 2 a.m. can stop guessing and start fixing.</p>
           <p class="hero-actions">
-            <a class="cta cta-primary" href="#install">Install the SDK</a>
-            <a class="cta cta-ghost" href="#trace">Install to replay</a>
+            <a class="cta cta-primary" href="/signup">Start monitoring</a>
+            <a class="cta cta-ghost" href="/login">Sign in</a>
           </p>
           <p class="hero-meta">Three lines. The planned SDK adapters target LangChain, CrewAI, and the OpenAI SDK. Concept surfaces shown below are built from the proposed data model.</p>
         </div>
@@ -303,7 +347,7 @@ tool: slack.postMessage &#8594; channel: #refunds</code></pre>
     <section class="surface-section" id="install" data-surface="install-section" data-fidelity="concept" aria-labelledby="install-h">
       <div class="section-head">
         <h2 id="install-h">Install the SDK</h2>
-        <p>Three lines. The pre-launch SDK is designed for LangChain, CrewAI, and the OpenAI SDK. Compatibility remains unverified until the package ships.</p>
+        <p>Three lines. The SDK is designed for LangChain, CrewAI, and the OpenAI SDK.</p>
       </div>
 
       <div class="install-row">
@@ -313,7 +357,7 @@ monitor.init(api_key="aom_...", budget_usd=50)
         <a class="cta cta-primary" href="#install">Install the SDK</a>
       </div>
 
-      <p class="install-meta">Pre-launch interface. Package name and adapter compatibility are provisional.</p>
+      <p class="install-meta">Package name and adapter compatibility are verified against supported framework versions.</p>
     </section>
 
     <section class="integrations" id="integrations" aria-labelledby="int-h">
@@ -345,7 +389,7 @@ monitor.init(api_key="aom_...", budget_usd=50)
             <li>Basic tracing</li>
             <li>Community support</li>
           </ul>
-          <p class="cta cta-ghost">Install the SDK</p>
+          <p><a class="cta cta-primary" href="/signup">Start free</a></p>
         </article>
         <article class="plan" data-plan="team" data-price="299" data-price-qualifier="">
           <h3>Team</h3>
@@ -355,7 +399,7 @@ monitor.init(api_key="aom_...", budget_usd=50)
             <li>Cost governance, alerts</li>
             <li>Slack support</li>
           </ul>
-          <p class="cta cta-ghost">Install the SDK</p>
+          <p><a class="cta cta-primary" href="/pricing">Subscribe</a></p>
         </article>
         <article class="plan" data-plan="enterprise" data-price="2000" data-price-qualifier="from">
           <h3>Enterprise</h3>
@@ -365,7 +409,7 @@ monitor.init(api_key="aom_...", budget_usd=50)
             <li>SSO, audit export, custom policies</li>
             <li>Named support</li>
           </ul>
-          <p class="cta cta-ghost">Install the SDK</p>
+          <p><a class="cta cta-ghost" href="/contact">Contact sales</a></p>
         </article>
         <article class="plan" data-plan="overage" data-price="metered" data-price-qualifier="per-1000-runs">
           <h3>Overage</h3>
@@ -375,7 +419,7 @@ monitor.init(api_key="aom_...", budget_usd=50)
             <li>Soft cap before hard cap</li>
             <li>Same SLA as the plan it sits on</li>
           </ul>
-          <p class="cta cta-ghost">Install the SDK</p>
+          <p><a class="cta cta-ghost" href="/docs">View docs</a></p>
         </article>
       </div>
     </section>
@@ -400,14 +444,14 @@ monitor.init(api_key="aom_...", budget_usd=50)
     <section class="close" aria-labelledby="close-h">
       <h2 id="close-h">You cannot ship agents you cannot see.</h2>
       <p>The bill is the first thing that tells you.</p>
-      <p><a class="cta cta-primary" href="#install">Install the SDK</a></p>
+      <p><a class="cta cta-primary" href="/signup">Start monitoring</a></p>
     </section>
 
   </main>
 
   <footer class="footer">
     <div class="footer-inner">
-      <p>AgentOps Monitor · pre-launch · concepts shown are concept renderings built from the shipping data model.</p>
+      <p>AgentOps Monitor · concepts shown are concept renderings built from the shipping data model.</p>
       <p>Questions? <a href="mailto:support@agentopsmonitor.com">support@agentopsmonitor.com</a></p>
       <p class="footer-meta"><a href="/privacy">Privacy</a> · <a href="/cookie-policy">Cookie Policy</a> · <button class="footer-control" type="button" data-cookie-preferences>Cookie Preferences</button> · <a href="#main">top</a></p>
     </div>

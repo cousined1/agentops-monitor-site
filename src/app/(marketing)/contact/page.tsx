@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import ContactSalesForm from "./ContactSalesForm";
 
 export const metadata: Metadata = {
   title: "Contact",
@@ -20,11 +21,9 @@ export default function ContactPage() {
         <p>
           For Team and Enterprise plans, leave a work email and we will reach out within 24 hours.
         </p>
+        <ContactSalesForm />
         <p>
-          <a className="cta cta-primary" href="/signup">Create an account</a>{" "}
-          <a className="cta cta-ghost" href="mailto:support@agentopsmonitor.com">
-            Email sales
-          </a>
+          Prefer email? <a href="mailto:support@agentopsmonitor.com">support@agentopsmonitor.com</a>
         </p>
       </section>
 

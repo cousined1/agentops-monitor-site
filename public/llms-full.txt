@@ -1,0 +1,146 @@
+# AgentOps Monitor - Complete System Context & Documentation (agentopsmonitor.com)
+> Observability, telemetry, distributed tracing, and security monitoring for multi-agent systems and LLM pipelines.
+
+This document contains comprehensive architecture, technical specifications, and API documentation for LLMs, AI agents, and automated crawlers querying AgentOps Monitor.
+
+---
+
+## 1. Platform Overview
+AgentOps Monitor (https://agentopsmonitor.com) is an observability and reliability platform engineered specifically for autonomous agent networks, multi-agent frameworks, and complex LLM architectures.
+
+### Core Problems Solved
+- Invisible Cascading Failures: Multi-agent loops where subagents hallucinate or get stuck in recursive execution cycles.
+- Token Runaways and Budget Exhaustion: Unchecked tool calls causing sudden cost spikes across OpenAI, Anthropic, Gemini, or local models.
+- Tool Call Failures: Silent errors in API calls, malformed parameters, or unhandled exceptions in agent toolchains.
+- Security and Policy Breaches: Prompt injection, unauthorized data exfiltration, and tool execution outside defined boundary policies.
+
+---
+
+## 2. Core Architecture & Features
+
+### 2.1 Distributed Multi-Agent Tracing
+- OpenTelemetry (OTLP) compatible trace collector.
+- Visual execution graph showing parent agents, subagents, tool invocations, and LLM reasoning steps.
+- Sub-millisecond trace ingestion pipeline with end-to-end latency profiling.
+- Support for asynchronous agent communication patterns (pub/sub, direct message, blackboard).
+
+### 2.2 Cost and Token Analytics
+- Real-time tracking of input tokens, output tokens, cached tokens, and reasoning tokens.
+- Cost attribution grouped by agent role, model provider, prompt template, user ID, or organization workspace.
+- Configurable circuit breakers: automatically pause agents or abort runs when token or spend thresholds are reached.
+
+### 2.3 Agent Security Guardrails
+- Input/Output scanner for prompt injections, jailbreaks, and sensitive data leakage (PII/credentials).
+- Tool authorization policies restricting execution of sensitive operations based on agent identity and session state.
+- Automated killswitches triggered by anomalous behavior or repeated validation failures.
+
+### 2.4 Integration Surface
+AgentOps Monitor ingests through one authenticated HTTPS endpoint, so any language or framework can post traces without a vendor SDK:
+- Python: `requests` or `urllib`
+- Node.js / TypeScript: `fetch` or any HTTP client
+- Framework adapters (LangChain, CrewAI, OpenAI, Anthropic): wrap the same POST call around your agent loop.
+
+---
+
+## 3. Quick Start & Integration Guides
+
+### Python Integration
+```python
+import requests
+
+response = requests.post(
+    "https://agentopsmonitor.com/api/ingest",
+    headers={"Authorization": "Bearer aom_live_..."},
+    json={
+        "external_id": "run-001",
+        "agent_name": "customer-support-swarm",
+        "status": "completed",
+        "tokens_in": 412880,
+        "tokens_out": 88104,
+        "cost_usd": 18.44,
+        "spans": [
+            {"span_type": "workflow", "tool_name": "start", "duration_ms": 0},
+            {"span_type": "llm", "provider": "openai", "model": "gpt-4o",
+             "tool_name": "openai.chat", "tokens_in": 8204, "tokens_out": 512,
+             "cost_usd": 0.08, "duration_ms": 600},
+            {"span_type": "tool", "provider": "stripe",
+             "tool_name": "stripe.refunds.create", "status": "held", "duration_ms": 208},
+        ],
+    },
+)
+# 200 -> {"ok": true, "run_id": "<uuid>", "span_count": 3}
+```
+
+### TypeScript / Node.js Integration
+```typescript
+const response = await fetch("https://agentopsmonitor.com/api/ingest", {
+  method: "POST",
+  headers: {
+    Authorization: "Bearer aom_live_...",
+    "Content-Type": "application/json",
+  },
+  body: JSON.stringify({
+    external_id: "sess-98213",
+    agent_name: "analyst-01",
+    status: "completed",
+    spans: [
+      { span_type: "llm", provider: "anthropic", model: "claude-sonnet-4-5",
+        tool_name: "anthropic.messages", tokens_in: 4200, tokens_out: 610,
+        cost_usd: 0.02, duration_ms: 900 },
+    ],
+  }),
+});
+const result = await response.json(); // { ok, run_id, span_count }
+```
+
+---
+
+## 4. REST API Reference
+
+All requests to the ingestion API require the `Authorization: Bearer <API_KEY>` header.
+
+### Endpoints
+- `POST https://agentopsmonitor.com/api/ingest`
+  - Ingest a run: JSON body with `external_id`, `agent_name`, optional token/cost fields, and a `spans` array (each span has `span_type` of `llm`, `tool`, or `workflow`, plus optional `provider`, `model`, `tool_name`, `tokens_in`, `tokens_out`, `cost_usd`, `duration_ms`, `status`, `input`, `output`).
+  - Auth: `Authorization: Bearer aom_live_...` (401 without a valid key).
+  - Errors: 400 invalid JSON or schema, 413 body over 1 MB, 429 rate limit exceeded.
+  - 200 response: `{ "ok": true, "run_id": "<uuid>", "span_count": <n> }`.
+- `GET https://agentopsmonitor.com/api/health`
+  - Returns service health and uptime status.
+
+---
+
+## 5. Pricing and Plans
+
+### Developer (Free)
+- $0 / month
+- Up to 50,000 events / month
+- 7 days trace retention
+- Community support and core integrations
+
+### Pro (Team)
+- $299 / month
+- Up to 500,000 runs / month
+- Cost alerts, budget caps, and priority support
+
+### Enterprise
+- Custom pricing / annual billing
+- Dedicated ingestion cluster, custom retention policies, SOC 2 compliance, SLA guarantees, and on-premises deployment options.
+
+---
+
+## 6. Site Map & Canonical URL Reference
+- Homepage: https://agentopsmonitor.com/
+- Features: https://agentopsmonitor.com/features
+- Pricing: https://agentopsmonitor.com/pricing
+- Documentation: https://agentopsmonitor.com/docs
+- Integrations: https://agentopsmonitor.com/integrations
+- Blog: https://agentopsmonitor.com/blog
+- About Us: https://agentopsmonitor.com/about
+- Contact: https://agentopsmonitor.com/contact
+- Privacy Policy: https://agentopsmonitor.com/privacy
+- Terms of Service: https://agentopsmonitor.com/terms
+- Sitemap XML: https://agentopsmonitor.com/sitemap.xml
+- Robots TXT: https://agentopsmonitor.com/robots.txt
+- LLMs TXT: https://agentopsmonitor.com/llms.txt
+- Full LLM Context: https://agentopsmonitor.com/llms-full.txt

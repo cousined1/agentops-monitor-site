@@ -1,7 +1,7 @@
 import { createReadStream } from "node:fs";
 import { stat } from "node:fs/promises";
 import { createServer } from "node:http";
-import { basename, extname, resolve, sep } from "node:path";
+import { extname, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const root = resolve(fileURLToPath(new URL(".", import.meta.url)));
@@ -30,7 +30,7 @@ const contentSecurityPolicy = [
   "default-src 'self'",
   "img-src 'self' data: https://www.google-analytics.com https://*.analytics.google.com",
   "style-src 'self' 'unsafe-inline'",
-  "script-src 'self' 'unsafe-inline' https://static.cloudflareinsights.com",
+  "script-src 'self' 'unsafe-inline' https://static.cloudflareinsights.com https://www.googletagmanager.com",
   "font-src 'self'",
   "connect-src 'self' https://*.insforge.app https://cloudflareinsights.com https://*.cloudflareinsights.com https://www.google-analytics.com https://*.analytics.google.com https://www.googletagmanager.com",
   "object-src 'none'",
@@ -88,20 +88,12 @@ const server = createServer(async (request, response) => {
       return;
     }
     if (request.method === "POST") {
-      let body = "";
-      request.on("data", (chunk) => {
-        body += chunk;
-        if (body.length > 1e5) request.destroy();
-      });
-      request.on("end", () => {
-        if (request.destroyed) return;
-        try {
-          const lead = JSON.parse(body || "{}");
-          console.log(`[lead received]`, lead.email ?? "no-email", lead.company ?? "");
-        } catch {}
-        response.writeHead(200, { "content-type": "application/json; charset=utf-8" });
-        response.end(JSON.stringify({ status: "ok" }));
-      });
+      response.writeHead(503, { "content-type": "application/json; charset=utf-8" });
+      response.end(
+        JSON.stringify({
+          error: "Lead capture is unavailable in the static fallback server. Use the Next.js app.",
+        }),
+      );
       return;
     }
   }
@@ -131,9 +123,14 @@ const server = createServer(async (request, response) => {
   const sectionRedirects = new Map([
     ["/pricing", "/#pricing"],
     ["/install", "/#install"],
+    ["/docs", "/#install"],
     ["/trace", "/#trace"],
+    ["/features", "/#trace"],
     ["/cost", "/#cost"],
     ["/integrations", "/#integrations"],
+    ["/contact", "/#pricing"],
+    ["/signup", "/#pricing"],
+    ["/login", "/"],
   ]);
   if (sectionRedirects.has(cleanPath)) {
     response.writeHead(302, { Location: sectionRedirects.get(cleanPath) });
@@ -141,61 +138,39 @@ const server = createServer(async (request, response) => {
     return;
   }
 
+  // P0 hardening: strict allowlist. This server exists to serve the static
+  // marketing site; nothing outside PUBLIC_ASSETS is reachable. Closes
+  // INFRA-002 / API-B-02 / AUTHZ-012 (dotfile, .git, .insforge exposure) and
+  // subsumes the deny-list approach: unknown paths 404 with no existence oracle.
+  const PUBLIC_ASSETS = new Map([
+    ["index.html", "index.html"],
+    ["privacy.html", "privacy.html"],
+    ["cookie-policy.html", "cookie-policy.html"],
+    ["styles.css", "styles.css"],
+    ["aom-chatbot.js", "public/aom-chatbot.js"],
+    ["cookie-consent.js", "cookie-consent.js"],
+    ["og-image.svg", "og-image.svg"],
+    ["favicon.ico", "public/favicon.ico"],
+    ["robots.txt", "robots.txt"],
+    ["sitemap.xml", "sitemap.xml"],
+    ["llms.txt", "public/llms.txt"],
+    ["llms-full.txt", "public/llms-full.txt"],
+  ]);
+  let requested = cleanPath === "/" ? "index.html" : cleanPath.slice(1);
   const extensionlessRoutes = new Map([
     ["privacy", "privacy.html"],
     ["cookie-policy", "cookie-policy.html"],
-    ["blog", "blog.html"],
   ]);
-
-  let relativePath = cleanPath === "/" ? "index.html" : cleanPath.slice(1);
-  const lowerRoute = relativePath.toLowerCase();
-  if (extensionlessRoutes.has(lowerRoute)) {
-    relativePath = extensionlessRoutes.get(lowerRoute);
-  }
-
-  // Block hidden files/directories (e.g. .git, .gitignore, .env)
-  const segments = relativePath.split(/[/\\]/);
-  if (segments.some((seg) => seg.startsWith("."))) {
+  const lowerRoute = requested.toLowerCase();
+  requested = extensionlessRoutes.get(lowerRoute) ?? requested;
+  const mapped = PUBLIC_ASSETS.get(requested);
+  if (!mapped) {
     response.writeHead(404, { "content-type": "text/plain; charset=utf-8" });
     response.end("Not found");
     return;
   }
-
-  // Block internal files, documentation, package manifests, and development variants
-  const blockedFiles = new Set([
-    "package.json",
-    "package-lock.json",
-    "server.mjs",
-    "run.json",
-    "readme.md",
-    "product-facts.md",
-    "site_spec.md",
-    "judge.md",
-    "prompt.md",
-    "tsconfig.json",
-    "railway.json",
-    "insforge.toml",
-  ]);
-  const lowerRelative = relativePath.toLowerCase();
-  const lowerBase = basename(lowerRelative);
-  if (
-    blockedFiles.has(lowerBase) ||
-    lowerRelative.endsWith(".md") ||
-    lowerRelative.startsWith("variants/") ||
-    lowerRelative === "variants" ||
-    lowerRelative.startsWith("src/") ||
-    lowerRelative === "src" ||
-    lowerRelative.startsWith("tests/") ||
-    lowerRelative === "tests" ||
-    lowerRelative.startsWith("migrations/") ||
-    lowerRelative === "migrations"
-  ) {
-    response.writeHead(404, { "content-type": "text/plain; charset=utf-8" });
-    response.end("Not found");
-    return;
-  }
-
-  const filePath = resolve(root, relativePath);
+  const filePath = resolve(root, mapped);
+  // Kept as defense-in-depth; with a fixed allowlist it can no longer fire.
   if (filePath !== root && !filePath.startsWith(`${root}${sep}`)) {
     response.writeHead(403);
     response.end("Forbidden");
@@ -226,6 +201,18 @@ const server = createServer(async (request, response) => {
     response.end("Not found");
   }
 });
+
+if (process.env.NODE_ENV === "production" && process.env.ALLOW_MARKETING_STATIC !== "1") {
+  console.error(
+    "Refusing to start server.mjs in production without ALLOW_MARKETING_STATIC=1 because it is a limited marketing-only fallback.",
+  );
+  process.exit(1);
+}
+
+// Drain in-flight responses before exiting on deploy signals (REL-007).
+const shutdown = () => server.close(() => process.exit(0));
+process.on("SIGTERM", shutdown);
+process.on("SIGINT", shutdown);
 
 server.listen(port, "0.0.0.0", () => {
   console.log(`AgentOps Monitor site listening on ${port}`);

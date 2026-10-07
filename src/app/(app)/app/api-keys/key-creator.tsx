@@ -34,6 +34,17 @@ export function KeyCreator() {
       form.reset();
       router.refresh();
     } catch (error) {
+      if (error && typeof error === "object" && "response" in error && error.response instanceof Response) {
+        try {
+          const data = (await error.response.json()) as { error?: string };
+          if (data?.error && typeof data.error === "string") {
+            setErrorMessage(data.error);
+            return;
+          }
+        } catch {
+          // fall through to default message
+        }
+      }
       if (error instanceof Error) {
         setErrorMessage(error.message);
       } else {

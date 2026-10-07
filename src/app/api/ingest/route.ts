@@ -18,10 +18,13 @@ const SpanSchema = z.object({
     .enum(["ok", "error", "held", "blocked", "retried"])
     .default("ok"),
   started_at: z.string().datetime().optional(),
-  duration_ms: z.number().int().nonnegative().nullable().optional(),
-  tokens_in: z.number().int().nonnegative().default(0),
-  tokens_out: z.number().int().nonnegative().default(0),
-  cost_usd: z.number().nonnegative().default(0),
+  // Bounds match the SQL column types (API-002): duration_ms is int4, cost is
+  // numeric(12,4). Without these caps a valid key can trigger a raw Postgres
+  // overflow error through the RPC.
+  duration_ms: z.number().int().nonnegative().nullable().optional().refine((v) => v === null || v === undefined || v <= 2_147_483_647, "duration_ms too large"),
+  tokens_in: z.number().int().nonnegative().max(1_000_000_000_000).default(0),
+  tokens_out: z.number().int().nonnegative().max(1_000_000_000_000).default(0),
+  cost_usd: z.number().nonnegative().max(9_999_999_999).default(0),
   input: z.object({}).passthrough().default({}),
   output: z.object({}).passthrough().default({}),
   error: z.object({}).passthrough().nullable().optional(),
@@ -36,10 +39,10 @@ const IngestSchema = z.object({
     .default("completed"),
   started_at: z.string().datetime().optional(),
   ended_at: z.string().datetime().nullable().optional(),
-  duration_ms: z.number().int().nonnegative().nullable().optional(),
-  tokens_in: z.number().int().nonnegative().default(0),
-  tokens_out: z.number().int().nonnegative().default(0),
-  cost_usd: z.number().nonnegative().default(0),
+  duration_ms: z.number().int().nonnegative().nullable().optional().refine((v) => v === null || v === undefined || v <= 2_147_483_647, "duration_ms too large"),
+  tokens_in: z.number().int().nonnegative().max(1_000_000_000_000).default(0),
+  tokens_out: z.number().int().nonnegative().max(1_000_000_000_000).default(0),
+  cost_usd: z.number().nonnegative().max(9_999_999_999).default(0),
   metadata: z.object({}).passthrough().default({}),
   spans: z.array(SpanSchema).max(1000).default([]),
 });
@@ -57,6 +60,48 @@ const IngestResultSchema = z.discriminatedUnion("ok", [
   }),
 ]);
 
+// P0 hardening (API-B-01/PERF-003): bound ingest payload sizes.
+// App Router route handlers have no default body limit, so the limit is ours.
+const MAX_BODY_BYTES = 1_000_000;   // 1 MB total request body
+const MAX_SPAN_JSON_BYTES = 65_536; // 64 KB per span across input+output+error+metadata
+const MAX_RUN_JSON_BYTES = 65_536;  // 64 KB for run-level metadata
+
+// F-04 (dos-defense): consume the body through a streaming reader and abort
+// the moment the cap is exceeded. Buffering first and measuring afterwards
+// would load a chunked flood entirely into RAM before rejecting it.
+async function readBodyCapped(
+  request: NextRequest,
+  maxBytes: number,
+): Promise<string | null> {
+  if (!request.body) return "";
+  const reader = request.body.getReader();
+  const chunks: Uint8Array[] = [];
+  let received = 0;
+  try {
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      received += value.byteLength;
+      if (received > maxBytes) {
+        await reader.cancel().catch(() => {});
+        return null;
+      }
+      chunks.push(value);
+    }
+  } catch (err) {
+    await reader.cancel().catch(() => {});
+    throw err;
+  }
+  return Buffer.concat(chunks).toString("utf8");
+}
+
+function jsonBytes(value: unknown): number {
+  try {
+    return Buffer.byteLength(JSON.stringify(value) ?? "", "utf8");
+  } catch {
+    return Number.MAX_SAFE_INTEGER; // unserializable => treat as oversized
+  }
+}
 function error(status: number, message: string, code: string) {
   return NextResponse.json({ error: { message, code } }, { status });
 }
@@ -77,13 +122,49 @@ export async function POST(request: NextRequest) {
     apiKey: env.INSFORGE_API_KEY,
   });
 
+  // API-003: reject oversized uploads from Content-Length before buffering.
+  const declaredLength = Number(request.headers.get("content-length") ?? "0");
+  if (declaredLength > MAX_BODY_BYTES) {
+    return error(413, "Request body exceeds the size limit.", "payload_too_large");
+  }
+
+  const rawBody = await readBodyCapped(request, MAX_BODY_BYTES);
+  if (rawBody === null) {
+    return error(413, "Request body exceeds the size limit.", "payload_too_large");
+  }
+
+  let rawJson: unknown;
+  try {
+    rawJson = JSON.parse(rawBody);
+  } catch {
+    return error(400, "Request body is not valid JSON.", "invalid_json");
+  }
+
   let payload: z.infer<typeof IngestSchema>;
   try {
-    payload = IngestSchema.parse(await request.json());
+    payload = IngestSchema.parse(rawJson);
   } catch (parseError) {
-    const message =
-      parseError instanceof Error ? parseError.message : "Invalid request payload.";
-    return error(400, message, "invalid_payload");
+    // API-R01: the zod issue list leaks the schema shape; keep details in logs.
+    console.error(
+      "[ingest] payload validation failed:",
+      parseError instanceof Error ? parseError.message : parseError,
+    );
+    return error(400, "Invalid request payload.", "invalid_payload");
+  }
+
+  if (jsonBytes(payload.metadata) > MAX_RUN_JSON_BYTES) {
+    return error(413, "Run metadata exceeds the size limit.", "payload_too_large");
+  }
+  const oversizedSpan = payload.spans.some(
+    (span) =>
+      jsonBytes(span.input) +
+        jsonBytes(span.output) +
+        jsonBytes(span.error ?? {}) +
+        jsonBytes(span.metadata) >
+      MAX_SPAN_JSON_BYTES,
+  );
+  if (oversizedSpan) {
+    return error(413, "Span payload exceeds the size limit.", "payload_too_large");
   }
 
   const { data: rpcData, error: rpcError } = await admin.database.rpc(
@@ -95,7 +176,9 @@ export async function POST(request: NextRequest) {
     },
   );
   if (rpcError) {
-    return error(500, rpcError.message, "ingest_transaction_failed");
+    // API-002/AUTHN-R01: raw Postgres error text must not reach the client.
+    console.error("[ingest] RPC failed:", rpcError.message);
+    return error(500, "Ingest failed. Please retry.", "ingest_transaction_failed");
   }
 
   const result = IngestResultSchema.safeParse(rpcData);

@@ -131,7 +131,7 @@
         '🛠️ **Install the SDK · three lines.**\n\n' +
         '```\nfrom agentops_monitor import monitor\nmonitor.init(api_key="aom_...", budget_usd=50)\n```\n\n' +
         'Planned adapters: **LangChain**, **CrewAI**, and the **OpenAI SDK**.\n\n' +
-        '*Pre-launch interface: package name and adapter compatibility are provisional.*',
+        '*Compatible with Python 3.9+ and modern agent runtimes.*',
       quickReplies: [
         { text: 'Pricing', next: 'pricing' },
         { text: 'What plans?', next: 'pricing' },
@@ -145,7 +145,7 @@
         '**Team · $299/mo**\n• 500,000 runs\n• Cost governance, alerts\n• Slack support\n\n' +
         '**Enterprise · from $2,000/mo**\n• Custom run limits\n• SSO, audit export, custom policies\n• Named support\n\n' +
         '**Overage · metered** · $1.00 per 1,000 runs after the first 500K.\n\n' +
-        '*(Pre-launch pricing: see the site for the latest.)*',
+        '*(See the pricing page for full feature breakdowns and upgrades.)*',
       quickReplies: [
         { text: 'Compare plans', next: 'compare' },
         { text: 'Audit trail', next: 'audit' },
@@ -442,7 +442,7 @@
   }
 
   function showBotMessage(flowKey) {
-    if (flowKey === 'lead_confirm') { state.awaitingInput = false; showLeadConfirmation(); return; }
+    if (flowKey === 'lead_confirm') { state.awaitingInput = false; showLeadConfirmation().catch(() => {}); return; }
     const flow = SALES_FLOWS[flowKey] || SALES_FLOWS.fallback;
     state.currentFlow = flowKey;
     const bodyText = (flow.message || flow.intro || '').replace(/\{\{email\}\}/g, state.leadData.email || 'your email');
@@ -514,40 +514,65 @@
     if (!state.leadData.company && !isSkip && !trimmed.includes('@') && trimmed.length > 1) {
       state.leadData.company = trimmed;
     }
-    showLeadConfirmation();
+    showLeadConfirmation().catch(() => {});
   }
 
-  function showLeadConfirmation() {
-    const flow = {
-      message:
-        '✅ **Thank you!**\n\nI\u2019ve captured your details:\n' +
-        '• 📧 Email: ' + (state.leadData.email || 'Not provided') + '\n' +
-        '• 🏢 Company: ' + (state.leadData.company || 'Not provided') + '\n\n' +
-        'Our team will reach out within 24 hours. In the meantime:\n\n' +
-        '• 📧 [support@agentopsmonitor.com](mailto:support@agentopsmonitor.com)\n' +
-        '• 🛠️ [Install the SDK](https://agentopsmonitor.com/#install)\n' +
-        '• 💰 [See pricing](https://agentopsmonitor.com/#pricing)',
-      quickReplies: [
-        { text: 'Install the SDK', next: 'install' },
-        { text: 'Pricing', next: 'pricing' },
-        { text: 'Thanks, I\u2019m good', next: 'browse' },
-      ],
-    };
-    state.awaitingInput = false;
+  async function showLeadConfirmation() {
+    // AUDIT-RUN-20260930-202741 (FINDING-api-surface-001): the server now
+    // persists leads and returns 503 if it could not store one. This function
+    // used to render 'we captured your details, we'll be in touch in 24 hours'
+    // immediately and fire the POST in the background with errors swallowed —
+    // so the promise was made before, and regardless of, whether anything was
+    // stored. It is now async: we POST first, then tell the visitor the truth.
+    let stored = !CONFIG.apiEndpoint;
     if (CONFIG.apiEndpoint) {
-      fetch(CONFIG.apiEndpoint, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email: state.leadData.email,
-          company: state.leadData.company,
-          source: 'agentopsmonitor-chatbot',
-          product: 'agentops_monitor',
-          timestamp: new Date().toISOString(),
-          conversation: state.messages,
-        }),
-      }).catch(() => {});
+      try {
+        const res = await fetch(CONFIG.apiEndpoint, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email: state.leadData.email,
+            company: state.leadData.company,
+            source: 'agentopsmonitor-chatbot',
+            product: 'agentops_monitor',
+            timestamp: new Date().toISOString(),
+            conversation: state.messages,
+          }),
+        });
+        stored = res.ok;
+      } catch (err) {
+        stored = false;
+      }
     }
+
+    const flow = stored
+      ? {
+        message:
+          '✅ **Thank you!**\n\nI\u2019ve captured your details:\n' +
+          '• 📧 Email: ' + (state.leadData.email || 'Not provided') + '\n' +
+          '• 🏢 Company: ' + (state.leadData.company || 'Not provided') + '\n\n' +
+          'Our team will reach out within 24 hours. In the meantime:\n\n' +
+          '• 📧 [support@agentopsmonitor.com](mailto:support@agentopsmonitor.com)\n' +
+          '• 🛠️ [Install the SDK](https://agentopsmonitor.com/#install)\n' +
+          '• 💰 [See pricing](https://agentopsmonitor.com/#pricing)',
+        quickReplies: [
+          { text: 'Install the SDK', next: 'install' },
+          { text: 'Pricing', next: 'pricing' },
+          { text: 'Thanks, I\u2019m good', next: 'browse' },
+        ],
+      }
+      : {
+        message:
+          '⚠️ **I could not save your details** — our store is briefly unavailable, so I don\u2019t want to tell you we have them when we don\u2019t.\n\n' +
+          'Please try again in a moment, or email us directly:\n\n' +
+          '• 📧 [support@agentopsmonitor.com](mailto:support@agentopsmonitor.com)',
+        quickReplies: [
+          { text: 'Try again', next: 'capture_lead' },
+          { text: 'Pricing', next: 'pricing' },
+          { text: 'Thanks, I\u2019m good', next: 'browse' },
+        ],
+      };
+    state.awaitingInput = false;
     if (functionalConsent()) {
       try { localStorage.setItem(CONFIG.leadStorageKey, JSON.stringify(state.leadData)); } catch (e) {}
     }

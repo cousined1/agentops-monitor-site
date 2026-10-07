@@ -1,6 +1,45 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+  <!-- Consent Mode default: MUST run before the GTM loader below, or
+       tags fire with no consent signal set (AUDIT-RUN-20260930-202741). -->
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag("consent", "default", {
+      ad_storage: "denied",
+      analytics_storage: "denied",
+      ad_user_data: "denied",
+      ad_personalization: "denied",
+      functionality_storage: "denied",
+      personalization_storage: "denied",
+      security_storage: "granted",
+      wait_for_update: 500
+    });
+    // Re-apply a stored choice here in the head, not only from
+    // /cookie-consent.js after it loads.
+    try {
+      var stored = JSON.parse(localStorage.getItem("aom_cookie_consent"));
+      if (stored && stored.categories && stored.policyVersion === "2026-08-19-v1") {
+        var c = stored.categories;
+        gtag("consent", "update", {
+          analytics_storage: c.analytics ? "granted" : "denied",
+          functionality_storage: c.preferences ? "granted" : "denied",
+          personalization_storage: c.preferences ? "granted" : "denied",
+          ad_storage: c.marketing ? "granted" : "denied",
+          ad_user_data: c.marketing ? "granted" : "denied",
+          ad_personalization: c.marketing ? "granted" : "denied"
+        });
+      }
+    } catch (e) {}
+  </script>
+  <!-- Google Tag Manager -->
+  <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+  new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+  j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+  'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+  })(window,document,'script','dataLayer','GTM-KL4BW5F2');</script>
+  <!-- End Google Tag Manager -->
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Cookie Policy · AgentOps Monitor</title>
@@ -22,46 +61,36 @@
     :focus-visible { outline: 2px solid #56d364; outline-offset: 2px; }
     :focus { outline-color: #56d364; }
   </style>
-  <script>
-    window.dataLayer = window.dataLayer || [];
-    function gtag(){dataLayer.push(arguments);}
-    gtag("consent", "default", {
-      ad_storage: "denied",
-      analytics_storage: "denied",
-      ad_user_data: "denied",
-      ad_personalization: "denied",
-      functionality_storage: "denied",
-      personalization_storage: "denied",
-      security_storage: "granted",
-      wait_for_update: 500
-    });
-  </script>
   <script src="cookie-consent.js" defer></script>
 </head>
 <body>
+  <!-- Google Tag Manager (noscript) -->
+  <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-KL4BW5F2"
+  height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+  <!-- End Google Tag Manager (noscript) -->
   <a class="skip" href="#main">Skip to content</a>
   <header class="topbar">
     <div class="topbar-inner">
       <a class="brand" href="/">
         <span class="brand-mark" aria-hidden="true">▌▐</span>
         <span class="brand-name">AgentOps Monitor</span>
-        <span class="brand-meta" aria-hidden="true">v0.7 · pre-launch</span>
       </a>
       <nav class="nav" aria-label="Primary">
         <a href="/#trace">Trace</a>
         <a href="/#cost">Cost</a>
-        <a href="/#install">Install</a>
-        <a href="/#integrations">Integrations</a>
-        <a href="/#pricing">Pricing</a>
+        <a href="/features">Features</a>
+        <a href="/pricing">Pricing</a>
+        <a href="/docs">Docs</a>
+        <a href="/login">Sign in</a>
       </nav>
-      <a class="cta cta-primary" href="/#install">Install the SDK</a>
+      <a class="cta cta-primary" href="/signup">Start free</a>
     </div>
   </header>
   <main id="main" class="legal">
     <section class="legal-head" data-surface="real" data-fidelity="real" aria-label="Cookie policy overview" data-proof-source="cookie-inventory">
       <p class="eyebrow">Policy version 2026-08-19-v1</p>
       <h1>Cookie policy</h1>
-      <p class="lede">This policy lists the cookies, browser storage, and third party scripts used by the pre-launch site at agentopsmonitor.com.</p>
+      <p class="lede">This policy lists the cookies, browser storage, and third party scripts used by the AgentOps Monitor site at agentopsmonitor.com.</p>
     </section>
 
     <section class="legal-block" data-surface="real" data-fidelity="real" aria-label="Current technology inventory" data-proof-source="cookie-inventory">
@@ -72,18 +101,22 @@
           <tbody>
             <tr><td><code>aom_cookie_consent</code></td><td>strictly necessary</td><td>Stores categories, timestamp, policy version, region label, GPC state, and how the choice was made.</td><td>Until browser storage is cleared or the policy version changes.</td></tr>
             <tr><td>Hosting request logs</td><td>strictly necessary</td><td>Security, abuse prevention, availability, and incident investigation. These are server logs, not browser cookies.</td><td>Hosting platform schedule.</td></tr>
-            <tr><td>Google Consent Mode state</td><td>strictly necessary</td><td>Defaults optional Google storage to denied. No Google Analytics, Ads, or Tag Manager script is currently loaded.</td><td>Current page view.</td></tr>
+            <tr><td>Google Tag Manager container <code>GTM-KL4BW5F2</code></td><td>analytics (consent required)</td><td>Loads on every page. Optional Google storage is set to denied by Google Consent Mode before the container loads; the container only runs tags for categories you have allowed.</td><td>Until browser storage is cleared, plus Google-side retention.</td></tr>
+            <tr><td>Google Consent Mode state</td><td>strictly necessary</td><td>Signals your choice to the container. Optional Google storage defaults to denied, and the default is applied before the Tag Manager container loads.</td><td>Current page view.</td></tr>
+            <tr><td><code>aom-chatbot-state</code></td><td>strictly necessary</td><td>Remembers whether the chat assistant panel is open so the widget behaves consistently.</td><td>Until browser storage is cleared.</td></tr>
+            <tr><td><code>aom-chatbot-lead</code></td><td>preferences</td><td>Remembers the details you typed into the chat assistant (email, company) so you do not have to re-enter them. Only written after you allow preferences storage; sending the lead itself is always your choice.</td><td>Until browser storage is cleared.</td></tr>
           </tbody>
         </table>
       </div>
-      <p>No analytics, preference, marketing, advertising, chat, pixel, or third party font technology is currently installed.</p>
+      <p>The only third party technology on this site is Google Tag Manager, which is loaded on every page. Its optional storage categories (analytics, advertising, personalisation, and functionality) are denied by default via Google Consent Mode, and the default is applied before the container loads, so nothing is enabled unless you allow it. No advertising or marketing pixel is currently configured in the container. If you decline analytics, the container still loads but its optional tags stay switched off.</p>
+      <p>The chat assistant is first party: when you submit a lead it sends the details you provided, including the conversation transcript, to our own <code>/api/leads</code> endpoint, where they are stored in a dedicated first-party lead store (see the <a href="/privacy">Privacy Notice</a>). If that store is unavailable the assistant tells you it could not save your details instead of confirming a capture that did not happen.</p>
     </section>
 
     <section class="legal-block">
       <h2>Categories</h2>
       <p><strong>Strictly necessary:</strong> supports security and remembers your privacy choice. It does not require opt-in.</p>
       <p><strong>Analytics:</strong> would measure site use and performance. It is off by default and no analytics provider is currently installed.</p>
-      <p><strong>Preferences:</strong> would remember optional interface settings. It is off by default and no optional preference storage is currently installed.</p>
+      <p><strong>Preferences:</strong> remembers optional interface settings, such as the chat assistant lead details. It is off by default: the chat assistant only writes preference storage after you allow it.</p>
       <p><strong>Marketing:</strong> would support advertising or cross-site measurement. It is off by default and no marketing provider is currently installed.</p>
     </section>
 
@@ -103,7 +136,7 @@
   </main>
   <footer class="footer">
     <div class="footer-inner">
-      <p>AgentOps Monitor · pre-launch · policy version 2026-08-19-v1.</p>
+      <p>AgentOps Monitor · policy version 2026-08-19-v1.</p>
       <p class="footer-meta"><a href="/privacy">Privacy</a> · <button class="footer-control" type="button" data-cookie-preferences>Cookie Preferences</button> · <a href="/">top</a></p>
     </div>
   </footer>

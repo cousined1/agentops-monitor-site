@@ -1,4 +1,7 @@
 import type { Metadata } from "next";
+import { getSessionState } from "@/lib/insforge";
+import { getProfileByUserId } from "@/lib/billing";
+import SubscribeButton from "./SubscribeButton";
 
 export const metadata: Metadata = {
   title: "Pricing",
@@ -7,7 +10,39 @@ export const metadata: Metadata = {
   alternates: { canonical: "/pricing" },
 };
 
-export default function PricingPage() {
+export const dynamic = "force-dynamic";
+
+async function getPricingState(): Promise<{ subscribed: boolean; authUnavailable: boolean }> {
+  const session = await getSessionState();
+  if (session.unavailable) {
+    return { subscribed: false, authUnavailable: true };
+  }
+  if (!session.user) {
+    return { subscribed: false, authUnavailable: false };
+  }
+
+  try {
+    const profile = await getProfileByUserId(session.user.id);
+    const status = profile?.subscription_status;
+    return {
+      subscribed: status === "active" || status === "trialing",
+      authUnavailable: false,
+    };
+  } catch (error) {
+    console.error("[pricing] subscription check failed:", error instanceof Error ? error.message : error);
+    return { subscribed: false, authUnavailable: true };
+  }
+}
+
+export default async function PricingPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ status?: string; checkout?: string; plan?: string }>;
+}) {
+  const params = await searchParams;
+  const { subscribed, authUnavailable } = await getPricingState();
+  const resumeCheckout = params.checkout === "1" && params.plan === "team";
+
   return (
     <main>
       <section>
@@ -16,6 +51,14 @@ export default function PricingPage() {
         <p className="lede">
           Run-volume pricing, not seat pricing. The same plan covers one agent or a thousand.
         </p>
+        {params.status === "cancelled" ? (
+          <p role="status">Checkout was cancelled. You can try again whenever you’re ready.</p>
+        ) : null}
+        {authUnavailable ? (
+          <p className="auth-error">
+            We could not verify your current subscription right now. Please retry in a moment.
+          </p>
+        ) : null}
         <p>
           <a className="cta cta-primary" href="/signup">Start free</a>{" "}
           <a className="cta cta-ghost" href="/contact">Talk to sales</a>
@@ -38,6 +81,19 @@ export default function PricingPage() {
             <p>500,000 runs</p>
             <p>Cost governance, alerts</p>
             <p>Slack support</p>
+            <p>
+              <SubscribeButton
+                plan="team"
+                label={subscribed ? "Manage subscription" : "Subscribe to Team"}
+                subscribed={subscribed}
+                autoStart={resumeCheckout && !subscribed && !authUnavailable}
+                disabledReason={
+                  authUnavailable
+                    ? "Billing is temporarily unavailable while session checks recover. Please retry shortly."
+                    : null
+                }
+              />
+            </p>
           </article>
           <article className="card">
             <p className="card-label">Enterprise</p>
@@ -79,8 +135,8 @@ export default function PricingPage() {
       </section>
 
       <section>
-        <p className="eyebrow">Pre-launch</p>
-        <p>Pricing shown is planned launch pricing. See <a href="/contact">contact</a> for the latest.</p>
+        <p className="eyebrow">Pricing notes</p>
+        <p>Annual billing and custom volume commitments are available. See <a href="/contact">contact</a> for details.</p>
       </section>
     </main>
   );

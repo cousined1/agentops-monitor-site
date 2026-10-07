@@ -33,7 +33,10 @@ export default function AboutPage() {
       <section>
         <h2>Status</h2>
         <p>
-          Pre-launch. Adapters, package names, and pricing shown on this site are provisional until public release.
+          General availability MVP. Adapters and features ship continuously.
+        </p>
+        <p>
+          Planned / Roadmap, not yet built: real-time automated budget killing, multi-region SSO, and framework adapters for LangChain, CrewAI, the OpenAI SDK, and the Anthropic SDK. Everything else on this site ships today.
         </p>
       </section>
 
