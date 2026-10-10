@@ -8,12 +8,12 @@ export const metadata: Metadata = {
 
 export default function BlogPage() {
   return (
-    <main>
+    <main id="main" tabIndex={-1}>
       <section>
         <p className="eyebrow">Blog</p>
         <h1>Notes from the agent-operations desk.</h1>
         <p className="lede">
-          Engineering notes and production case studies from the agent operations desk.
+          Engineering notes on agent observability, cost, and audit trails.
         </p>
       </section>
 
@@ -24,7 +24,7 @@ export default function BlogPage() {
           <li>Why volume-based pricing is honest pricing</li>
           <li>The four-pain model: see, explain, cap, audit</li>
           <li>Replay before review: traces as a PR check</li>
-          <li>What "audit trail" actually means at 2 a.m.</li>
+          <li>What &quot;audit trail&quot; actually means at 2 a.m.</li>
         </ul>
       </section>
 

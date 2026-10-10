@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { appEnv, type AppEnv } from "@/lib/env";
 import { getServerClient } from "@/lib/insforge";
+import { apiError } from "@/lib/api-error";
 import {
   BillingConfigError,
   getPlanByName,
@@ -23,10 +24,7 @@ type InsforgeClient = Awaited<ReturnType<typeof getServerClient>>;
 const ACTIVE_SUBSCRIPTION_STATUSES = new Set(["active", "trialing", "past_due", "unpaid", "paused", "incomplete"]);
 
 function billingEnvFailure() {
-  return NextResponse.json(
-    { error: { message: "Billing is not configured.", code: "billing_not_configured" } },
-    { status: 503 },
-  );
+  return apiError(503, "Billing is not configured.", "billing_not_configured");
 }
 
 // F-06: an InsForge auth outage is a 503, never a false 401 that sends a
@@ -37,14 +35,10 @@ async function requireCheckoutUser(insforge: InsforgeClient, request: NextReques
     console.error("[billing/checkout] auth check failed:", authError.message);
     return {
       user: null,
-      response: NextResponse.json(
-        {
-          error: {
-            message: "Authentication is temporarily unavailable. Please try again shortly.",
-            code: "auth_unavailable",
-          },
-        },
-        { status: 503 },
+      response: apiError(
+        503,
+        "Authentication is temporarily unavailable. Please try again shortly.",
+        "auth_unavailable",
       ),
     };
   }
@@ -67,14 +61,10 @@ async function duplicateSubscriptionGuard(userId: string): Promise<NextResponse 
       "[billing/checkout] profile lookup failed:",
       err instanceof Error ? err.message : err,
     );
-    return NextResponse.json(
-      {
-        error: {
-          message: "Your subscription status could not be checked. Please try again shortly.",
-          code: "profile_unavailable",
-        },
-      },
-      { status: 503 },
+    return apiError(
+      503,
+      "Your subscription status could not be checked. Please try again shortly.",
+      "profile_unavailable",
     );
   }
   if (ACTIVE_SUBSCRIPTION_STATUSES.has(profile?.subscription_status ?? "")) {
@@ -91,9 +81,11 @@ async function parsePlanName(request: NextRequest): Promise<string> {
     // empty body is fine; default plan below
   }
   // API-006: validate the plan selector instead of echoing unvalidated input.
-  return /^[a-z]{2,24}$/.test((body.plan ?? "team").toString())
-    ? (body.plan ?? "team").toString().toLowerCase()
-    : "unknown";
+  // Normalise BEFORE validating: the regex only accepts lowercase, so "Team"
+  // used to fail the test and fall through to "unknown", producing the
+  // nonsensical `Unknown plan: unknown` instead of resolving the real plan.
+  const requested = (body.plan ?? "team").toString().trim().toLowerCase();
+  return /^[a-z]{2,24}$/.test(requested) ? requested : "unknown";
 }
 
 async function buildCheckoutResponse(params: {
@@ -107,28 +99,18 @@ async function buildCheckoutResponse(params: {
 
   const plan = await getPlanByName(planName);
   if (!plan) {
-    return NextResponse.json(
-      { error: { message: `Unknown plan: ${planName}`, code: "unknown_plan" } },
-      { status: 400 },
-    );
+    return apiError(400, `Unknown plan: ${planName}`, "unknown_plan");
   }
   if (plan.price_usd_cents <= 0) {
-    return NextResponse.json(
-      { error: { message: `"${plan.name}" is not a purchasable plan.`, code: "not_purchasable" } },
-      { status: 400 },
-    );
+    return apiError(400, `"${plan.name}" is not a purchasable plan.`, "not_purchasable");
   }
 
   const priceId = await getPlanPriceId(plan);
   if (!priceId) {
-    return NextResponse.json(
-      {
-        error: {
-          message: `Plan "${plan.name}" has no Stripe price configured yet.`,
-          code: "price_not_configured",
-        },
-      },
-      { status: 503 },
+    return apiError(
+      503,
+      `Plan "${plan.name}" has no Stripe price configured yet.`,
+      "price_not_configured",
     );
   }
 
@@ -150,10 +132,7 @@ async function buildCheckoutResponse(params: {
   });
   const sessionUrl = session.url ?? "";
   if (!sessionUrl) {
-    return NextResponse.json(
-      { error: { message: "Stripe did not return a checkout URL.", code: "no_url" } },
-      { status: 502 },
-    );
+    return apiError(502, "Stripe did not return a checkout URL.", "no_url");
   }
   return NextResponse.json({ url: sessionUrl });
 }
@@ -179,10 +158,7 @@ export async function POST(request: NextRequest) {
     return await buildCheckoutResponse({ request, env, user, planName });
   } catch (err) {
     if (err instanceof BillingConfigError) {
-      return NextResponse.json(
-        { error: { message: err.message, code: err.code } },
-        { status: 503 },
-      );
+      return apiError(503, err.message, err.code);
     }
     // P1: never leak Stripe/DB internals (e.g. price IDs, SQLSTATE) to the
     // client. Details go to server logs only.
@@ -190,14 +166,10 @@ export async function POST(request: NextRequest) {
       "[billing/checkout] Stripe session creation failed:",
       err instanceof Error ? err.message : err,
     );
-    return NextResponse.json(
-      {
-        error: {
-          message: "Checkout could not be started. Please try again or contact support.",
-          code: "checkout_failed",
-        },
-      },
-      { status: 500 },
+    return apiError(
+      500,
+      "Checkout could not be started. Please try again or contact support.",
+      "checkout_failed",
     );
   }
 }

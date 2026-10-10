@@ -1,5 +1,11 @@
 -- ============================================================
 -- AgentOps Monitor — Stripe billing fields on profiles
+--
+-- DATA-003 (audit 2026-09-15): restored into migrations/ — this migration
+-- was applied to the production DB on 2026-09-03 but only existed under
+-- supabase/migrations/, leaving a gap in the canonical replay chain.
+-- Filename matches the remote migration record (stripe-billing-fields).
+
 -- Adds subscription state to profiles; plans.stripe_price_id
 -- already exists (seeded null — real price IDs come from the
 -- Stripe dashboard or the setup script).

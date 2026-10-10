@@ -1,13 +1,12 @@
 # AgentOps Monitor (agentopsmonitor.com)
-> Production-grade observability, telemetry, and security monitoring for multi-agent AI systems, LLM pipelines, and autonomous workflows.
+> Observability and cost tracking for AI agent runs. Pre-launch: this is a working ingest and trace-review tool, not a finished security product.
 
-AgentOps Monitor provides real-time telemetry, OpenTelemetry-compatible tracing, cost and token tracking, security policy guardrails, and anomaly alerts for autonomous AI agent networks.
+AgentOps Monitor accepts agent run and span telemetry over one authenticated HTTPS endpoint, records cost and token counts per run and per span, and renders the result as a run list and a run detail view.
 
 ## Core Capabilities
-- **Multi-Agent Distributed Tracing**: Track parent-child agent workflows, tool execution trees, and task dependencies with sub-millisecond trace ingestion.
-- **Cost & Token Intelligence**: Granular per-session, per-model, and per-tool cost analytics with proactive budget exhaustion and runaway loop circuit breakers.
-- **Security & Threat Detection**: Detect prompt injection, data exfiltration, loop runaway states, and unapproved tool access with automated killswitches.
-- **Framework & SDK Support**: Native integration with LangChain, AutoGen, CrewAI, LlamaIndex, OpenAI Swarm, and standard OpenTelemetry OTLP collectors.
+- **Run and span tracing**: Parent and child spans are recorded per run, with span type, status, timing, tokens, and cost shown on the run detail view. Up to 500 spans render per run, with an explicit notice when a run is truncated.
+- **Cost & token capture**: Input and output token counts and cost, recorded per run and per span as reported by the client at ingest.
+- **Framework support**: Framework adapters and an OpenTelemetry collector are planned. Today, any client that can POST JSON with a bearer token can send traces; see the quick start below.
 
 ## Key Resources
 - [Home & Platform Overview](https://agentopsmonitor.com/)

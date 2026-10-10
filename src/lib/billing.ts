@@ -1,10 +1,11 @@
 import Stripe from "stripe";
 import { createAdminClient } from "@insforge/sdk";
 import { appEnv } from "./env";
+import type { ErrorCode } from "./api-error";
 
 export class BillingConfigError extends Error {
-  code: string;
-  constructor(message: string, code = "billing_not_configured") {
+  code: ErrorCode;
+  constructor(message: string, code: ErrorCode = "billing_not_configured") {
     super(message);
     this.code = code;
   }
@@ -100,7 +101,7 @@ export async function getProfileByUserId(userId: string): Promise<ProfileBilling
   const admin = getAdmin();
   const { data, error } = await admin.database
     .from("profiles")
-    .select("id, stripe_customer_id, current_plan_name, subscription_status, current_period_end")
+    .select("id, email, stripe_customer_id, current_plan_name, subscription_status, current_period_end")
     .eq("id", userId);
   if (error) throw new Error(error.message);
   const rows = Array.isArray(data) ? data : [];
@@ -131,13 +132,26 @@ export async function ensureProfileBilling(
   const existing = await getProfileByUserId(userId);
   if (existing) return existing;
 
-  const repair = {
-    id: userId,
-    email: email ?? null,
-    current_plan_name: "free",
-    subscription_status: "inactive",
-  };
-  const { error } = await getAdmin().database.from("profiles").upsert([repair]);
+  // profiles.email is `text not null` with no default
+  // (migrations/20260819230452_agentops-monitor-v1.sql:12). The previous
+  // `email: email ?? null` wrote an explicit NULL there, so whenever the caller
+  // had no email the upsert failed with SQLSTATE 23502 — and /api/billing/status
+  // turned that into a 503 that repeated forever for that account. Refuse
+  // explicitly instead of writing a row the schema cannot accept.
+  if (!email) {
+    throw new Error(
+      "Cannot self-heal a missing profile: the auth user has no email to satisfy profiles.email.",
+    );
+  }
+
+  const { error } = await getAdmin().database.from("profiles").upsert([
+    {
+      id: userId,
+      email,
+      current_plan_name: "free",
+      subscription_status: "inactive",
+    },
+  ]);
   if (error) throw new Error(error.message);
   return {
     id: userId,
@@ -157,13 +171,29 @@ export async function updateProfileBilling(
     subscription_status: string | null;
     current_period_end: string | null;
   }>,
+  email?: string,
 ): Promise<void> {
   // F-03: upsert instead of a bare update. A silent zero-row update (profile
   // missing because the signup write failed) must never drop a plan assignment
   // delivered by the Stripe webhook.
+  //
+  // The upsert compiles to INSERT ... ON CONFLICT DO UPDATE, and profiles.email
+  // is NOT NULL with no default, so an upsert that omits `email` fails 23502 on
+  // exactly the case the upsert exists for: a missing profile row. The webhook
+  // therefore could never repair the lost plan assignment it was written to
+  // protect, and the customer stayed on `free` while paying. Resolve the email
+  // from the stored row (or the caller) so the INSERT branch is valid.
+  const existing = await getProfileByUserId(userId);
+  const resolvedEmail = existing?.email ?? email;
+  if (!resolvedEmail) {
+    throw new Error(
+      `Cannot write billing state for ${userId}: no stored profile row and no email to satisfy profiles.email.`,
+    );
+  }
+
   const { error } = await getAdmin()
     .database.from("profiles")
-    .upsert([{ id: userId, ...patch }]);
+    .upsert([{ id: userId, email: resolvedEmail, ...patch }]);
   if (error) throw new Error(error.message);
 }
 

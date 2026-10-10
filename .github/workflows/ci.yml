@@ -46,6 +46,9 @@ jobs:
         run: npm audit --audit-level=high
         continue-on-error: true
 
+      - name: Lint
+        run: npm run lint
+
       - name: Typecheck
         run: npm run typecheck
 
@@ -54,7 +57,3 @@ jobs:
 
       - name: Build
         run: npm run build
-
-      # Optional: enable after adding eslint.config.mjs (see audit/fix-proposal-p0.md 2d).
-      # - name: Lint
-      #   run: npm run lint

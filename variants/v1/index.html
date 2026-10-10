@@ -14,7 +14,7 @@
   <meta name="description" content="Trace every tool call, govern spend, audit every decision. Pre-launch B2B observability for AI agents.">
   <meta property="og:title" content="AgentOps Monitor - Observability for AI Agents">
   <meta name="theme-color" content="#0e1116">
-  <meta property="og:description" content="Trace every tool call. Govern every dollar. Audit every decision.">
+  <meta property="og:description" content="Trace every tool call your AI agent makes, with the token counts and USD cost of every run and span attached.">
   <meta property="og:type" content="website">
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' fill='%230e1116'/%3E%3Cpath d='M3 4h10M3 8h10M3 12h10' stroke='%2356d364' stroke-width='1.5'/%3E%3C/svg%3E">
   <link rel="stylesheet" href="styles.css">
@@ -164,7 +164,7 @@ tool: slack.postMessage → channel: #refunds</code></pre>
     <section class="surface-section" id="cost" data-surface="cost-section" data-fidelity="concept" aria-labelledby="cost-h">
       <div class="section-head">
         <h2 id="cost-h">Spend you can defend in a budget meeting</h2>
-        <p>Hard caps at the workflow, the agent, and the user. A run stops at the limit you set, not at the limit your CFO finds out about.</p>
+        <p>Every run and span records the input and output tokens and the cost your client reports at ingest, so the spend is visible on the run detail view instead of surfacing on an invoice. Nothing is halted automatically yet - spend caps and automated budget enforcement are on the roadmap. The one limit enforced today is the free tier's 10,000 runs per month.</p>
       </div>
 
       <div class="surface-row">
@@ -278,12 +278,12 @@ monitor.init(api_key="aom_...", budget_usd=50)
           </ul>
           <p class="cta cta-ghost">Install the SDK</p>
         </article>
-        <article class="plan" data-plan="overage" data-price="metered" data-price-qualifier="per-1000-runs">
+        <article class="plan" data-plan="overage" data-price="not-charged-yet" data-price-qualifier="">
           <h3>Overage</h3>
-          <p class="price"><span class="amount">Metered</span><span class="period">per 1,000 runs</span></p>
+          <p class="price"><span class="amount">Not charged yet</span><span class="period">metered billing on the roadmap</span></p>
           <ul>
-            <li>Billed monthly on actual usage</li>
-            <li>Soft cap before hard cap</li>
+            <li>Team accounts keep ingesting past 500,000 runs</li>
+            <li>No overage charge is raised today</li>
             <li>Same SLA as the plan it sits on</li>
           </ul>
           <p class="cta cta-ghost">Install the SDK</p>

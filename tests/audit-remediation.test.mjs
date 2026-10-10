@@ -1,5 +1,5 @@
-import { describe, expect, it, vi } from "vitest";
-import { readFileSync, readdirSync } from "node:fs";
+import { describe, expect, it } from "vitest";
+import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 
 describe("Audit Remediation & Verification Suite", () => {
@@ -13,7 +13,7 @@ describe("Audit Remediation & Verification Suite", () => {
     expect(content).toMatch(/from\(\s*["']leads["']\s*\)\s*\.insert\(/);
     // A failed write must surface as 5xx, never as { status: "ok" }.
     expect(content).toMatch(/if \(!persisted\)/);
-    expect(content).toMatch(/status: 503/);
+    expect(content).toMatch(/if \(!persisted\)[\s\S]{0,240}apiError\(\s*503,/);
   });
 
   it("AUDIT-006b (LEAD LOSS): a public.leads migration exists and locks the table to project_admin", () => {
@@ -36,20 +36,40 @@ describe("Audit Remediation & Verification Suite", () => {
 
   it("AUDIT-008 (CONSENT ORDERING): the consent default precedes the GTM loader in every served page", () => {
     // Consent Mode only binds if the default exists BEFORE the container loads.
+    //
+    // Anchor the GTM loader on the stable googletagmanager.com/gtm.js URL, not
+    // on the container id. The id used to be hardcoded in src/app/layout.tsx,
+    // so removing it (to make the documented kill-switch real) made this guard
+    // report a missing loader and fail on correct code.
     const pages = [
       join(repoRoot, "src", "app", "layout.tsx"),
-      join(repoRoot, "public", "index.html"),
       join(repoRoot, "public", "privacy.html"),
       join(repoRoot, "public", "cookie-policy.html"),
     ];
     for (const p of pages) {
       const content = readFileSync(p, "utf8");
       const consent = content.indexOf('gtag("consent", "default"');
-      const gtm = content.indexOf("GTM-KL4BW5F2");
+      const gtm = content.indexOf("googletagmanager.com/gtm.js");
       expect(consent, `consent default missing in ${p}`).toBeGreaterThan(-1);
       expect(gtm, `GTM loader missing in ${p}`).toBeGreaterThan(-1);
       expect(consent, `consent default must precede GTM in ${p}`).toBeLessThan(gtm);
     }
+  });
+
+  it("AUDIT-008e (ANALYTICS KILL-SWITCH): the layout has no baked-in container id", () => {
+    const layout = readFileSync(join(repoRoot, "src", "app", "layout.tsx"), "utf8");
+    const analytics = readFileSync(join(repoRoot, "src", "lib", "analytics.ts"), "utf8");
+
+    // NEXT_PUBLIC_GTM_ID used to fall back to the production container, so it
+    // was never falsy, `isEnabled()` was always true, and every `npm run dev`
+    // shipped localhost traffic into the production analytics property - while
+    // the README documented the opposite in three places.
+    expect(analytics).not.toMatch(/NEXT_PUBLIC_GTM_ID\s*\?\?\s*["']GTM-/);
+    expect(layout).not.toMatch(/['"]GTM-[A-Z0-9]+['"]/);
+
+    // Both the loader and the <noscript> iframe must be gated on the same value.
+    expect(layout).toMatch(/\{GTM_ID \? \(/);
+    expect(layout).toMatch(/import \{ GTM_ID \} from "@\/lib\/analytics"/);
   });
 
   it("AUDIT-008d (CONSENT EXECUTION): the consent default is a real inline script, not a next/script", () => {
@@ -156,5 +176,23 @@ describe("Audit Remediation & Verification Suite", () => {
     const reqBilling = new NextRequest("https://agentopsmonitor.com/billing");
     const resBilling = await middleware(reqBilling);
     expect(resBilling.headers.get("location")).toContain("/login?next=%2Fbilling");
+  });
+
+  it("P1-5 (NO SECOND HOMEPAGE): public/index.html stays deleted and unreferenced", () => {
+    // The orphan duplicate was served at /index.html with a conflicting title and
+    // canonical, competing with / in search. Removing the file is not enough on its
+    // own - the sitemap and robots.txt must also stay silent about it, and no
+    // middleware or config entry may keep treating it as a served page.
+    expect(
+      existsSync(join(repoRoot, "public", "index.html")),
+      "public/index.html must not come back - it is a self-competing second homepage"
+    ).toBe(false);
+
+    const middlewareSrc = readFileSync(join(repoRoot, "src", "middleware.ts"), "utf8");
+    expect(middlewareSrc).not.toContain('"/index.html"');
+
+    // Never linked, never listed: an orphan that search engines can still index.
+    expect(readFileSync(join(repoRoot, "public", "sitemap.xml"), "utf8")).not.toContain("index.html");
+    expect(readFileSync(join(repoRoot, "public", "robots.txt"), "utf8")).not.toContain("index.html");
   });
 });

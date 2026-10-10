@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getServerClient } from "@/lib/insforge";
 import { Breadcrumbs } from "@/components/breadcrumbs";
+import { formatDate, formatTime, formatTokens, formatUsd } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
 
@@ -106,14 +107,18 @@ export default async function RunDetailPage({ params }: { params: Promise<{ id: 
       <section>
         <h1>Run {run.external_id}</h1>
         <p className="lede">
-          {run.agent_name} · {run.status} · {new Date(run.started_at).toLocaleString()}
+          {run.agent_name} · {run.status} · {formatDate(run.started_at)}
         </p>
       </section>
 
       <section className="cards">
         <article className="card">
           <p className="card-label">Duration</p>
-          <p className="card-value">{run.duration_ms ?? "-"} ms</p>
+          <p className="card-value">
+            {run.duration_ms === null || run.duration_ms === undefined
+              ? "-"
+              : `${run.duration_ms} ms`}
+          </p>
         </article>
         <article className="card">
           <p className="card-label">Spans</p>
@@ -121,11 +126,11 @@ export default async function RunDetailPage({ params }: { params: Promise<{ id: 
         </article>
         <article className="card">
           <p className="card-label">Tokens</p>
-          <p className="card-value">{(run.tokens_in ?? 0) + (run.tokens_out ?? 0)}</p>
+          <p className="card-value">{formatTokens(run.tokens_in, run.tokens_out)}</p>
         </article>
         <article className="card">
           <p className="card-label">Cost</p>
-          <p className="card-value">${run.cost_usd}</p>
+          <p className="card-value">{formatUsd(run.cost_usd)}</p>
         </article>
       </section>
 
@@ -145,13 +150,15 @@ export default async function RunDetailPage({ params }: { params: Promise<{ id: 
               const outputText = formatSpanPayload(span.output);
               return (
                 <li key={span.id} className="span">
-                  <span className="time">{span.started_at ? new Date(span.started_at).toLocaleTimeString() : "-"}</span>
+                  <span className="time">{formatTime(span.started_at)}</span>
                   <span className="agent">{span.span_type}</span>
                   <span className="tool">
                     {span.tool_name ?? span.model ?? span.provider ?? "-"} ·{" "}
                     {span.status} ·{" "}
-                    {span.duration_ms ?? "-"} ms ·{" "}
-                    ${span.cost_usd}
+                    {span.duration_ms === null || span.duration_ms === undefined
+                      ? "-"
+                      : `${span.duration_ms} ms`}{" "}
+                    · {formatUsd(span.cost_usd)}
                   </span>
                   {inputText !== null || outputText !== null ? (
                     <details className="span-payload">

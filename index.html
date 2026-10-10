@@ -106,7 +106,7 @@
         "name": "What does AgentOps Monitor do?",
         "acceptedAnswer": {
           "@type": "Answer",
-          "text": "AgentOps Monitor traces every tool call and LLM decision an AI agent makes, enforces spending caps, and records an audit trail of prompts, outputs, tool calls, and human approvals."
+          "text": "AgentOps Monitor traces every tool call and LLM decision an AI agent makes, records the token counts and USD cost of every run and span, and surfaces the most expensive runs in a dashboard."
         }
       },
       {
@@ -114,7 +114,7 @@
         "name": "How much does AgentOps Monitor cost?",
         "acceptedAnswer": {
           "@type": "Answer",
-          "text": "Launch pricing is planned at $0 for up to 10,000 agent runs a month, $299 a month for 500,000 runs with cost governance and alerts, and enterprise plans from $2,000 a month with SSO and audit export."
+          "text": "Launch pricing is planned at $0 for up to 10,000 agent runs a month, which is enforced at ingest, and $299 a month for 500,000 runs. Metered overage billing, cost alerts, SSO, and audit export are on the roadmap and are not shipped."
         }
       },
       {
@@ -122,7 +122,7 @@
         "name": "Which AI agent frameworks does AgentOps Monitor support?",
         "acceptedAnswer": {
           "@type": "Answer",
-          "text": "The planned SDK adapters target LangChain, CrewAI, and the OpenAI SDK. Compatibility is provisional until the package ships."
+          "text": "The planned SDK adapters target LangChain, CrewAI, and the OpenAI SDK. Compatibility is provisional until the package ships. Today, ingestion is a plain HTTP POST to the ingest API from any framework."
         }
       },
       {
@@ -130,7 +130,7 @@
         "name": "Can AgentOps Monitor stop an agent that is spending too much?",
         "acceptedAnswer": {
           "@type": "Answer",
-          "text": "Yes. Spending caps run at the workflow, agent, and user level, and a run stops at the limit you set instead of running until the invoice arrives."
+          "text": "Not yet. Today it records the cost and token counts your agent reports at ingest and surfaces the most expensive runs, but it does not halt a run or refuse a spend. Spend caps and automated budget enforcement are on the roadmap. The one limit that is enforced today is the free tier's 10,000 runs per month."
         }
       }
     ]
@@ -279,7 +279,7 @@ tool: slack.postMessage &#8594; channel: #refunds</code></pre>
     <section class="surface-section" id="cost" data-surface="cost-section" data-fidelity="concept" aria-labelledby="cost-h">
       <div class="section-head">
         <h2 id="cost-h">Spend you can defend in a budget meeting</h2>
-        <p>Hard caps at the workflow, the agent, and the user. A run stops at the limit you set, not at the limit your CFO finds out about.</p>
+        <p>Every run and span records the input and output tokens and the cost your client reports at ingest, so the spend is visible on the run detail view instead of surfacing on an invoice. The dashboard ranks the most expensive runs first. Nothing is halted automatically yet - spend caps and automated budget enforcement are on the roadmap. The one limit enforced today is the free tier's 10,000 runs per month.</p>
       </div>
 
       <div class="surface-row">
@@ -360,7 +360,7 @@ monitor.init(api_key="aom_...", budget_usd=50)
     <section class="pricing" id="pricing" aria-labelledby="price-h">
       <div class="section-head">
         <h2 id="price-h">Pricing</h2>
-        <p>Planned launch pricing for free, team, enterprise, and metered overage.</p>
+        <p>Planned launch pricing for free, team, and enterprise. Metered overage billing is on the roadmap and is not charged today.</p>
       </div>
       <div class="plan-row">
         <article class="plan" data-plan="free" data-price="0" data-price-qualifier="">
@@ -378,7 +378,7 @@ monitor.init(api_key="aom_...", budget_usd=50)
           <p class="price"><span class="amount">$299</span><span class="period">a month</span></p>
           <ul>
             <li>500,000 runs</li>
-            <li>Cost governance, alerts</li>
+            <li>Cost attribution, full trace detail</li>
             <li>Slack support</li>
           </ul>
           <p><a class="cta cta-primary" href="/pricing">Subscribe</a></p>
@@ -388,17 +388,17 @@ monitor.init(api_key="aom_...", budget_usd=50)
           <p class="price"><span class="amount">From $2,000</span><span class="period">a month</span></p>
           <ul>
             <li>Custom run limits</li>
-            <li>SSO, audit export, custom policies</li>
+            <li>SSO, audit export, custom policies (planned)</li>
             <li>Named support</li>
           </ul>
           <p><a class="cta cta-ghost" href="/contact">Contact sales</a></p>
         </article>
-        <article class="plan" data-plan="overage" data-price="metered" data-price-qualifier="per-1000-runs">
+        <article class="plan" data-plan="overage" data-price="not-charged-yet" data-price-qualifier="">
           <h3>Overage</h3>
-          <p class="price"><span class="amount">Metered</span><span class="period">per 1,000 runs</span></p>
+          <p class="price"><span class="amount">Not charged yet</span><span class="period">metered billing on the roadmap</span></p>
           <ul>
-            <li>Billed monthly on actual usage</li>
-            <li>Soft cap before hard cap</li>
+            <li>Team accounts keep ingesting past 500,000 runs</li>
+            <li>No overage charge is raised today</li>
             <li>Same SLA as the plan it sits on</li>
           </ul>
           <p><a class="cta cta-ghost" href="/docs">View docs</a></p>
@@ -409,7 +409,7 @@ monitor.init(api_key="aom_...", budget_usd=50)
     <section class="audit" aria-labelledby="audit-h">
       <div class="section-head">
         <h2 id="audit-h">What an audit reader actually gets</h2>
-        <p>The audit trail will hold every prompt, model output, tool call, and human approval, retained according to configured policy. SOC 2, HIPAA, GDPR, and ISO badges are not claimed on this page. The audit trail is the product.</p>
+        <p>The trace keeps what actually ran: the model and provider behind each call, which tool was invoked, the input and output payloads, and the cost and duration of every span. Human approval workflows and policy decisions are not captured yet - they are on the roadmap. SOC 2, HIPAA, GDPR, and ISO badges are not claimed on this page.</p>
       </div>
       <table class="ledger audit-table">
         <thead><tr><th>event</th><th>recorded</th><th>retained</th></tr></thead>

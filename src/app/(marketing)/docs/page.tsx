@@ -26,7 +26,7 @@ print(response.status_code, response.json())`;
 
 export default function DocsPage() {
   return (
-    <main>
+    <main id="main" tabIndex={-1}>
       <section>
         <p className="eyebrow">Docs</p>
         <h1>Generate a key. Post a trace. See it live.</h1>
@@ -61,7 +61,9 @@ export default function DocsPage() {
         <h2>3. Handle errors</h2>
         <p>
           Missing or invalid key: 401. Malformed JSON or schema violations: 400. Body over 1 MB:
-          413. Rate limit exceeded: 429.
+          413. Rate limit exceeded: 429. Free-tier monthly run limit reached: 402 with
+          <code>quota_exceeded</code>, and the response includes <code>runs_used</code> and{" "}
+          <code>runs_included</code>. Paid tiers are not capped and no overage is charged.
         </p>
       </section>
 
@@ -74,10 +76,13 @@ export default function DocsPage() {
       </section>
 
       <section>
-        <h2>Set budget caps</h2>
+        <h2>Spend caps</h2>
         <p>
-          Hard caps stop a run at the limit you set. See <a href="/features">features</a> for the
-          policy example.
+          Not available yet. Today AgentOps Monitor records the cost and token
+          counts your agent reports at ingest and surfaces the most expensive runs
+          in the dashboard; it does not halt a run or refuse a spend. Spend caps
+          and automated budget enforcement are on the roadmap - see{" "}
+          <a href="/features">features</a>.
         </p>
       </section>
     </main>

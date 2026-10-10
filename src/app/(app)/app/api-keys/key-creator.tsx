@@ -10,6 +10,19 @@ const CreateKeyResponseSchema = z.object({
   key: z.string().min(1),
 });
 
+// P1-4: tolerate the legacy flat string alongside the nested envelope - removing
+// this branch is what previously discarded the server's actual error message.
+function errorMessageFrom(payload: unknown): string | null {
+  if (!payload || typeof payload !== "object" || !("error" in payload)) return null;
+  const err = (payload as { error?: unknown }).error;
+  if (typeof err === "string") return err;
+  if (err && typeof err === "object") {
+    const message = (err as { message?: unknown }).message;
+    if (typeof message === "string") return message;
+  }
+  return null;
+}
+
 export function KeyCreator() {
   const router = useRouter();
   const [generatedKey, setGeneratedKey] = useState<string | null>(null);
@@ -36,9 +49,10 @@ export function KeyCreator() {
     } catch (error) {
       if (error && typeof error === "object" && "response" in error && error.response instanceof Response) {
         try {
-          const data = (await error.response.json()) as { error?: string };
-          if (data?.error && typeof data.error === "string") {
-            setErrorMessage(data.error);
+          const data: unknown = await error.response.json();
+          const serverMessage = errorMessageFrom(data);
+          if (serverMessage) {
+            setErrorMessage(serverMessage);
             return;
           }
         } catch {

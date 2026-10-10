@@ -42,19 +42,19 @@
         '• 💰 Pricing and plans\n' +
         '• 🔍 Replay an example agent trace\n' +
         '• ⚠️ Understand the "four hundred dollar call" problem\n' +
-        '• 🛠️ How to install the SDK',
+        '• 🛠️ How to send your first trace',
       quickReplies: [
         { text: 'What is AgentOps Monitor?', next: 'about' },
         { text: 'See pricing', next: 'pricing' },
         { text: 'Show me a trace', next: 'trace' },
-        { text: 'Install the SDK', next: 'install' },
+        { text: 'Send your first trace', next: 'install' },
       ],
     },
     about: {
       message:
         '📡 **AgentOps Monitor** is observability for AI agents in production. It replays every tool call, every LLM decision, and every dollar an agent spends, so an on-call engineer at 2 a.m. can stop guessing and start fixing.\n\n' +
         '**The pitch:** *"Find the call that cost you four hundred dollars."*\n\n' +
-        'It tracks: cost per run, token counts (in/out), every LLM call, every tool call (Stripe, Slack, vectorstore, etc.), and budget caps.',
+        'It tracks: cost per run, token counts (in/out), every LLM call, and every tool call (Stripe, Slack, vectorstore, etc.).',
       quickReplies: [
         { text: 'The four hundred dollar problem', next: 'fourhundred' },
         { text: 'Four pains', next: 'pains' },
@@ -80,11 +80,11 @@
         '2. **You cannot explain a decision.** Why was that refund rejected, that lead routed there?\n' +
         '3. **Costs spiral without a ceiling.** One looping agent, one very large bill.\n' +
         '4. **Compliance blocks the deploy.** No audit trail, no approval, no launch.\n\n' +
-        'We turn every run into a replayable trace with a hard budget cap.',
+        'We turn every run into a replayable trace, with the cost of every call attached.',
       quickReplies: [
         { text: 'How do budget caps work?', next: 'budgets' },
         { text: 'Pricing', next: 'pricing' },
-        { text: 'Install the SDK', next: 'install' },
+        { text: 'Send your first trace', next: 'install' },
       ],
     },
     trace: {
@@ -101,37 +101,33 @@
         '• +5,402 ms · `tool` retries × 3\n' +
         '• +11,008 ms · `llm` openai.chat · 64,118 tok\n' +
         '• +18,402 ms · `tool` slack.postMessage\n' +
-        '• +48,219 ms · **end · budget exceeded**\n\n' +
-        'Click a span to see the prompt, the model output, and what it changed in the world.',
+        '• +48,219 ms · **end · failed**\n\n' +
+        'Click a span to see the prompt, the model output, and what it changed in the world. The product did not stop this run for cost - it recorded all of it, which is the point: you can see the $400 before the invoice does.',
       quickReplies: [
         { text: 'How do caps stop this?', next: 'budgets' },
         { text: 'Pricing', next: 'pricing' },
-        { text: 'Install the SDK', next: 'install' },
+        { text: 'Send your first trace', next: 'install' },
       ],
     },
     budgets: {
       message:
         '🛑 **Spend you can defend in a budget meeting.**\n\n' +
-        'Hard caps at the **workflow**, the **agent**, and the **user**. A run stops at the limit you set, not at the limit your CFO finds out about.\n\n' +
-        '**Guardrails (example policy):**\n' +
-        '• `refund.cap_per_run_usd: 50`\n' +
-        '• `require_approval_above: 250` (approver: finance-lead)\n' +
-        '• `stripe.refunds.create: hold_above_usd: 100`\n' +
-        '• `slack.postMessage: block_channel: ["#exec-private"]`\n' +
-        '• `loop.max_retries: 3` · `halt_after_seconds: 60`\n\n' +
-        'Policies ship in the SDK and run in our edge.',
+        'Every run and span records the input and output tokens and the cost your client reports at ingest, so the spend is visible on the run detail view instead of surfacing on an invoice.\n\n' +
+        '**Today:** cost and token capture, per run and per span. No run is ever stopped for cost. The one limit enforced is the free tier at 10,000 runs per month.\n\n' +
+        '**Planned:** a per-run cost cap. If a run would exceed it, the run is still recorded and marked as killed rather than discarded, because the overspending run is the evidence you need. Per-agent and per-user budgets are not planned.',
       quickReplies: [
         { text: 'Pricing', next: 'pricing' },
-        { text: 'Install the SDK', next: 'install' },
+        { text: 'Send your first trace', next: 'install' },
         { text: 'What plans?', next: 'pricing' },
       ],
     },
     install: {
       message:
-        '🛠️ **Install the SDK · three lines.**\n\n' +
-        '```\nfrom agentops_monitor import monitor\nmonitor.init(api_key="aom_...", budget_usd=50)\n```\n\n' +
-        'Planned adapters: **LangChain**, **CrewAI**, and the **OpenAI SDK**.\n\n' +
-        '*Compatible with Python 3.9+ and modern agent runtimes.*',
+        '🛠️ **Send your first trace · one endpoint.**\n\n' +
+        'There is no SDK to install yet. Ingestion is a single authenticated HTTPS endpoint.\n\n' +
+        '```\nPOST https://agentopsmonitor.com/api/ingest\nAuthorization: Bearer aom_live_...\nContent-Type: application/json\n```\n\n' +
+        'Any client that can POST JSON with a bearer token works — Python, TypeScript, Go, anything. Create a key under Account → API keys.\n\n' +
+        'Planned: framework adapters for **LangChain**, **CrewAI**, and the **OpenAI SDK**.',
       quickReplies: [
         { text: 'Pricing', next: 'pricing' },
         { text: 'What plans?', next: 'pricing' },
@@ -141,11 +137,11 @@
     pricing: {
       message:
         '💰 **Planned launch pricing:**\n\n' +
-        '**Free · $0/mo**\n• 10,000 agent runs / month\n• Basic tracing\n• Community support\n\n' +
-        '**Team · $299/mo**\n• 500,000 runs\n• Cost governance, alerts\n• Slack support\n\n' +
-        '**Enterprise · from $2,000/mo**\n• Custom run limits\n• SSO, audit export, custom policies\n• Named support\n\n' +
-        '**Overage · metered** · $1.00 per 1,000 runs after the first 500K.\n\n' +
-        '*(See the pricing page for full feature breakdowns and upgrades.)*',
+        '**Free · $0/mo**\n• Basic tracing\n• Community support\n\n' +
+        '**Team · $299/mo**\n• Cost and token capture per run and span\n• Slack support\n\n' +
+        '**Enterprise · from $2,000/mo**\n• Named support\n\n' +
+        '**The free tier is capped; paid tiers are not.** The free plan stops at 10,000 runs per month and ingest returns 402 after that. Team and Enterprise are not capped and no overage is charged, so treat the 500,000 figure as intent rather than a limit in force.\n\n' +
+        '*(See the pricing page for the published tier breakdown.)*',
       quickReplies: [
         { text: 'Compare plans', next: 'compare' },
         { text: 'Audit trail', next: 'audit' },
@@ -154,20 +150,17 @@
     },
     compare: {
       message:
-        '📊 **Plan comparison (per month):**\n\n' +
+        '📊 **Planned tiers:**\n\n' +
         '| Plan | Free | Team | Enterprise |\n' +
         '|---|---|---|---|\n' +
-        '| Runs | 10K | 500K | Custom |\n' +
         '| Price | $0 | $299 | from $2,000 |\n' +
         '| Tracing | Basic | Full | Full |\n' +
-        '| Cost governance | - | ✅ | ✅ |\n' +
-        '| Alerts | - | ✅ | ✅ |\n' +
-        '| SSO | - | - | ✅ |\n' +
-        '| Audit export | - | - | ✅ |\n' +
+        '| Cost & token capture | ✅ | ✅ | ✅ |\n' +
+        '| Per-run cost cap | Planned | Planned | Planned |\n' +
         '| Support | Community | Slack | Named |\n\n' +
-        'Overage: $1.00 per 1,000 runs after 500K (metered).',
+        '**Not enforced yet.** Metering, cost alerts, SSO, and audit export are not shipped, so no paid tier stops, bills, or restricts anything. There is also no self-service export today. The one limit that is enforced is the free tier: 10,000 runs per month, after which ingest returns 402 until the month rolls over or the account upgrades.',
       quickReplies: [
-        { text: 'Install the SDK', next: 'install' },
+        { text: 'Send your first trace', next: 'install' },
         { text: 'Audit trail', next: 'audit' },
         { text: 'Talk to sales', next: 'contact' },
       ],
@@ -175,12 +168,12 @@
     audit: {
       message:
         '📋 **What an audit reader actually gets:**\n\n' +
-        '• **Prompt** · hash + length, policy window\n' +
-        '• **Model output** · hash + length, policy window\n' +
-        '• **Tool call** · args, response, latency, policy window\n' +
-        '• **Human approval** · approver, role, time, policy window\n' +
-        '• **Policy block** · rule, value, decision, policy window\n\n' +
-        'SOC 2 / HIPAA / GDPR / ISO badges are not claimed on the page. **The audit trail is the product.**',
+        '• **Run** · agent name, status, timing, tokens, cost\n' +
+        '• **Span** · type, provider, model, tool name, status, duration, tokens, cost\n' +
+        '• **Prompt and model output** · stored in full and shown on the run detail view\n' +
+        '• **Tool call** · arguments, response, and latency\n\n' +
+        '**Retention:** run and span data is kept indefinitely. There is no automated retention window yet, and payload data is stored unencrypted. You can erase everything for your account with a signed-in `DELETE /api/account` request.\n\n' +
+        'Human approval workflows and policy blocks are not shipped. SOC 2 / HIPAA / GDPR / ISO badges are not claimed on the page.',
       quickReplies: [
         { text: 'Pricing', next: 'pricing' },
         { text: 'Talk to sales', next: 'contact' },
@@ -214,7 +207,7 @@
       message:
         '👍 No problem, explore AgentOps Monitor.\n\n' +
         '• 🏠 [Homepage](https://agentopsmonitor.com)\n' +
-        '• 🛠️ [Install the SDK](https://agentopsmonitor.com/#install)\n\n' +
+        '• 🛠️ [Send your first trace](https://agentopsmonitor.com/#install)\n\n' +
         'I\u2019ll be here if you have questions. Just reopen the chat!',
       quickReplies: [
         { text: 'What is AgentOps Monitor?', next: 'about' },
@@ -407,7 +400,7 @@
       '</div>' +
       '<div id="aom-chatbot-messages"></div>' +
       '<div id="aom-chatbot-input-area">' +
-      '<input type="text" id="aom-chatbot-input" placeholder="Type a message..." autocomplete="off">' +
+      '<input type="text" id="aom-chatbot-input" placeholder="Type a message..." aria-label="Message support" autocomplete="off">' +
       '<button id="aom-chatbot-send" aria-label="Send"><svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg></button>' +
       '</div>' +
       '<div class="aom-chatbot-powered">Powered by <a href="' + CONFIG.siteUrl + '" target="_blank" rel="noopener">' + CONFIG.companyName + '</a></div>';
@@ -426,7 +419,13 @@
     loadState();
   }
 
-  function toggleChat() { state.isOpen ? closeChat() : openChat(); }
+  function toggleChat() {
+    if (state.isOpen) {
+      closeChat();
+    } else {
+      openChat();
+    }
+  }
   function openChat() {
     widget.classList.add('open');
     state.isOpen = true;
@@ -540,7 +539,7 @@
           }),
         });
         stored = res.ok;
-      } catch (err) {
+      } catch {
         stored = false;
       }
     }
@@ -553,10 +552,10 @@
           '• 🏢 Company: ' + (state.leadData.company || 'Not provided') + '\n\n' +
           'Our team will reach out within 24 hours. In the meantime:\n\n' +
           '• 📧 [support@agentopsmonitor.com](mailto:support@agentopsmonitor.com)\n' +
-          '• 🛠️ [Install the SDK](https://agentopsmonitor.com/#install)\n' +
+          '• 🛠️ [Send your first trace](https://agentopsmonitor.com/#install)\n' +
           '• 💰 [See pricing](https://agentopsmonitor.com/#pricing)',
         quickReplies: [
-          { text: 'Install the SDK', next: 'install' },
+          { text: 'Send your first trace', next: 'install' },
           { text: 'Pricing', next: 'pricing' },
           { text: 'Thanks, I\u2019m good', next: 'browse' },
         ],
@@ -574,7 +573,7 @@
       };
     state.awaitingInput = false;
     if (functionalConsent()) {
-      try { localStorage.setItem(CONFIG.leadStorageKey, JSON.stringify(state.leadData)); } catch (e) {}
+      try { localStorage.setItem(CONFIG.leadStorageKey, JSON.stringify(state.leadData)); } catch {}
     }
 
     const messageDiv = document.createElement('div');
@@ -675,7 +674,7 @@
         isOpen: state.isOpen,
         dismissed: !!state.dismissed,
       }));
-    } catch (e) {}
+    } catch {}
   }
 
   function loadState() {

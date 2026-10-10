@@ -8,7 +8,7 @@ export const metadata: Metadata = {
 
 export default function HelpPage() {
   return (
-    <main>
+    <main id="main" tabIndex={-1}>
       <section>
         <p className="eyebrow">Help</p>
         <h1>Help center</h1>
@@ -41,7 +41,11 @@ export default function HelpPage() {
       <section>
         <h2>How do budget caps work?</h2>
         <p>
-          Hard caps at the workflow, agent, or user. The run stops at the limit you set. See <a href="/features">features</a> for policy examples.
+          They are not available yet. AgentOps Monitor records the cost and token
+          counts your agent reports at ingest and ranks the most expensive runs in
+          the dashboard, but it does not stop a run at a limit you set. Spend caps
+          and automated budget enforcement are on the roadmap - see{" "}
+          <a href="/features">features</a>.
         </p>
       </section>
 

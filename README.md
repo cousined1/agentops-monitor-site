@@ -31,9 +31,15 @@ npm audit --omit=dev
 
 ## Google Tag Manager
 
-Set `NEXT_PUBLIC_GTM_ID` in `.env.local` (use the value from `.env.example`). When unset the GTM script does not load and `trackPageView` / `trackEvent` are no-ops, so local development does not send analytics.
+Set `NEXT_PUBLIC_GTM_ID` in `.env.local` (use the value from `.env.example`). When it is unset or empty the GTM loader, the `<noscript>` iframe and all `trackPageView` / `trackEvent` calls are skipped, so local development does not send analytics. `0` and `off` are also treated as disabled.
 
-The GTM container is loaded by `src/components/Analytics.tsx` after the consent defaults set in the root layout (`gtag-consent-default`) and alongside the cookie banner at `public/cookie-consent.js`. GTM only loads on the client; server-rendered HTML never references it. The `<noscript>` fallback iframe is included for clients without JavaScript.
+**A deployment that wants analytics must set `NEXT_PUBLIC_GTM_ID`.** There is no hardcoded fallback container any more: the id used to be baked into both `src/lib/analytics.ts` and the inline loader in `src/app/layout.tsx`, which made the kill-switch above a no-op and sent `npm run dev` traffic into the production property.
+
+The GTM container is injected inline by the root layout (`src/app/layout.tsx`), after the consent defaults in the same `<head>` (`gtag-consent-default`) and before `<body>`, so the denied-by-default state exists before the container loads. `src/components/Analytics.tsx` owns the `dataLayer` pushes only — it does not load the container. The `<noscript>` fallback iframe is included for clients without JavaScript.
+
+### What is sent to analytics
+
+`page_path` is the pathname plus an allowlist of campaign parameters (`utm_source`, `utm_medium`, `utm_campaign`, `utm_term`, `utm_content`). Every other query parameter is dropped: `/login` and `/signup` place provider error text in `?error=`, and sending the raw query string shipped that text — potentially including a typed email address — to the analytics vendor.
 
 ### Pageview ownership
 

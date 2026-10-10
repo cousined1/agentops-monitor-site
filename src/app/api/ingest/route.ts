@@ -55,8 +55,10 @@ const IngestResultSchema = z.discriminatedUnion("ok", [
   }),
   z.object({
     ok: z.literal(false),
-    code: z.enum(["invalid_api_key", "rate_limited"]),
+    code: z.enum(["invalid_api_key", "rate_limited", "quota_exceeded"]),
     message: z.string(),
+    runs_used: z.number().int().nonnegative().optional(),
+    runs_included: z.number().int().nonnegative().optional(),
   }),
 ]);
 
@@ -102,8 +104,13 @@ function jsonBytes(value: unknown): number {
     return Number.MAX_SAFE_INTEGER; // unserializable => treat as oversized
   }
 }
-function error(status: number, message: string, code: string) {
-  return NextResponse.json({ error: { message, code } }, { status });
+function error(
+  status: number,
+  message: string,
+  code: string,
+  extra?: Record<string, unknown>,
+) {
+  return NextResponse.json({ error: { message, code }, ...extra }, { status });
 }
 
 export async function POST(request: NextRequest) {
@@ -186,6 +193,16 @@ export async function POST(request: NextRequest) {
     return error(500, "Ingest transaction returned an invalid result.", "invalid_ingest_result");
   }
   if (!result.data.ok) {
+    // quota_exceeded is a billing state, not an auth or throttle problem. It
+    // previously had no branch, so it would have been reported as a 401
+    // "invalid API key" - telling a customer with a perfectly valid key that
+    // their key was wrong when the real cause is a full free-tier month.
+    if (result.data.code === "quota_exceeded") {
+      return error(402, result.data.message, "quota_exceeded", {
+        runs_used: result.data.runs_used ?? null,
+        runs_included: result.data.runs_included ?? null,
+      });
+    }
     const status = result.data.code === "rate_limited" ? 429 : 401;
     return error(status, result.data.message, result.data.code);
   }

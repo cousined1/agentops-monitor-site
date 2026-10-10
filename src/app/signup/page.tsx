@@ -221,7 +221,7 @@ export default async function SignupPage({
   }
 
   return (
-    <main className="auth-shell">
+    <main id="main" tabIndex={-1} className="auth-shell">
       <section className="auth-card">
         <h1>{pendingSignup ? "Verify your email" : "Create account"}</h1>
         <p className="lede">

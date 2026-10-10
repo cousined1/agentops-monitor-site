@@ -3,8 +3,8 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 // Wave G4 coverage closure for src/lib/insforge.ts. Only the external SDK
 // boundary (@insforge/sdk/ssr) and next/headers are mocked; the module's own
 // functions under test run for real. Mirrors tests/backend-security.test.mjs.
-const { createBrowserClient, createServerClient, createAuthActions, cookies } = vi.hoisted(
-  () => ({
+const { createBrowserClient, createServerClient, createAuthActions, cookies, headers } =
+  vi.hoisted(() => ({
     createBrowserClient: vi.fn(() => ({ kind: "browser" })),
     createServerClient: vi.fn(),
     createAuthActions: vi.fn(() => ({ kind: "auth-actions" })),
@@ -13,8 +13,8 @@ const { createBrowserClient, createServerClient, createAuthActions, cookies } = 
       set: vi.fn(),
       delete: vi.fn(),
     })),
-  }),
-);
+    headers: vi.fn(async () => ({ get: vi.fn() })),
+  }));
 
 vi.mock("@insforge/sdk/ssr", () => ({
   createBrowserClient,
@@ -22,7 +22,7 @@ vi.mock("@insforge/sdk/ssr", () => ({
   createAuthActions,
 }));
 
-vi.mock("next/headers", () => ({ cookies }));
+vi.mock("next/headers", () => ({ cookies, headers }));
 
 const BASE_ENV = {
   NEXT_PUBLIC_INSFORGE_URL: "https://backend.example",

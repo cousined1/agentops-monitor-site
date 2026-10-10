@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { getServerClient } from "@/lib/insforge";
 import { Breadcrumbs } from "@/components/breadcrumbs";
+import { formatDate, formatNumber, formatTokens, formatUsd } from "@/lib/format";
 
 export const metadata: Metadata = {
   title: "Runs",
@@ -36,10 +37,20 @@ export default async function RunsPage({
   if (runsResult.error) {
     console.error("[app/runs] list query failed:", runsResult.error.message);
   }
+  if (countResult.error) {
+    console.error("[app/runs] count query failed:", countResult.error.message);
+  }
   const runs = runsResult.error ? null : runsResult.data;
-  const total = countResult.count ?? 0;
-  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
-  const dbError = runsResult.error ? runsResult.error.message : null;
+  // P1-3: null means "count unavailable" — an outage, not zero runs.
+  const total = countResult.error ? null : (countResult.count ?? 0);
+  const totalPages = Math.max(1, Math.ceil((total ?? 0) / PAGE_SIZE));
+  const dbError = runsResult.error?.message ?? countResult.error?.message ?? null;
+  // When the count is unavailable we cannot prove there are no further pages, so
+  // Next must stay enabled. Collapsing totalPages to 1 rendered a dead "Next"
+  // that stranded any customer sitting on page 2+ during a count-only outage.
+  const countUnknown = total === null;
+  const hasNext = countUnknown || page < totalPages;
+  const hasPrevious = page > 1;
 
   return (
     <>
@@ -61,7 +72,7 @@ export default async function RunsPage({
       ) : null}
 
       <section>
-        {runs && runs.length > 0 ? (
+        {runs === null ? null : runs.length > 0 ? (
           <table className="ledger">
             <thead>
               <tr>
@@ -83,11 +94,11 @@ export default async function RunsPage({
                   </td>
                   <td>{run.agent_name}</td>
                   <td>{run.status}</td>
-                  <td>{run.started_at ? new Date(run.started_at).toLocaleString() : "-"}</td>
-                  <td className="num">{run.duration_ms ?? "-"}</td>
-                  <td className="num">{run.span_count}</td>
-                  <td className="num">{run.tokens_in + run.tokens_out}</td>
-                  <td className="num">${run.cost_usd}</td>
+                  <td>{formatDate(run.started_at)}</td>
+                  <td className="num">{formatNumber(run.duration_ms)}</td>
+                  <td className="num">{formatNumber(run.span_count)}</td>
+                  <td className="num">{formatTokens(run.tokens_in, run.tokens_out)}</td>
+                  <td className="num">{formatUsd(run.cost_usd)}</td>
                 </tr>
               ))}
             </tbody>
@@ -99,12 +110,14 @@ export default async function RunsPage({
 
       <section>
         <p>
-          Page {page} of {totalPages} · {total} run{total === 1 ? "" : "s"} total{" "}
+          {total === null
+            ? `Page ${page}`
+            : `Page ${page} of ${totalPages} · ${total} run${total === 1 ? "" : "s"} total`}
         </p>
         <p>
-          {page > 1 ? <Link href={`/app/runs?page=${page - 1}`}>Previous</Link> : <span>Previous</span>}
+          {hasPrevious ? <Link href={`/app/runs?page=${page - 1}`}>Previous</Link> : <span>Previous</span>}
           {" · "}
-          {page < totalPages ? <Link href={`/app/runs?page=${page + 1}`}>Next</Link> : <span>Next</span>}
+          {hasNext ? <Link href={`/app/runs?page=${page + 1}`}>Next</Link> : <span>Next</span>}
         </p>
       </section>
     </>

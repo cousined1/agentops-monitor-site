@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
 import { appEnv } from "@/lib/env";
+import { apiError } from "@/lib/api-error";
 import {
   getAdmin,
   getPlanByPriceId,
@@ -13,23 +14,33 @@ import {
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-// The billing/metering events this site cares about. Each event that arrives
-// is acknowledged and logged so Stripe delivery history shows them processed.
-const HANDLED_EVENTS = new Set([
-  // Subscriptions
+// Events this endpoint actually applies to a profile. The response's `handled`
+// flag is derived from THIS set — the switch below implements exactly these
+// five cases and no others.
+const IMPLEMENTED_EVENTS = new Set([
+  "checkout.session.completed",
   "customer.subscription.created",
   "customer.subscription.updated",
   "customer.subscription.deleted",
+  "invoice.payment_failed",
+]);
+
+// Every event Stripe is configured to deliver. They are all signature-verified
+// and acknowledged so the delivery history does not fill with retries, but
+// anything outside IMPLEMENTED_EVENTS changes no billing state and must never be
+// reported as handled. The previous single HANDLED_EVENTS set listed 14 types
+// against 5 switch cases, so `invoice.paid` and friends were reported
+// `handled: true` while doing nothing.
+const ACKNOWLEDGED_EVENTS = new Set([
+  ...IMPLEMENTED_EVENTS,
+  // Subscriptions
   "customer.subscription.trial_will_end",
-  // Checkout
-  "checkout.session.completed",
   // Customers
   "customer.created",
   "customer.deleted",
   // Billing & payments
   "invoice.created",
   "invoice.paid",
-  "invoice.payment_failed",
   "invoice.finalized",
   "payment_intent.succeeded",
   "payment_intent.payment_failed",
@@ -122,40 +133,25 @@ export async function POST(request: NextRequest) {
   } catch (err) {
     // API-013: env schema failures must not leak their details.
     console.error("[stripe-webhook] env validation failed:", err instanceof Error ? err.message : err);
-    return NextResponse.json(
-      { error: { message: "Webhook is not configured.", code: "webhook_not_configured" } },
-      { status: 500 },
-    );
+    return apiError(500, "Webhook is not configured.", "webhook_not_configured");
   }
 
   if (!secret) {
-    return NextResponse.json(
-      { error: { message: "STRIPE_WEBHOOK_SECRET is not configured.", code: "webhook_not_configured" } },
-      { status: 500 },
-    );
+    return apiError(500, "STRIPE_WEBHOOK_SECRET is not configured.", "webhook_not_configured");
   }
 
   const signature = request.headers.get("stripe-signature");
   if (!signature) {
-    return NextResponse.json(
-      { error: { message: "Missing stripe-signature header.", code: "missing_signature" } },
-      { status: 400 },
-    );
+    return apiError(400, "Missing stripe-signature header.", "missing_signature");
   }
 
   const declaredLength = Number(request.headers.get("content-length") ?? "0");
   if (declaredLength > MAX_WEBHOOK_BODY_BYTES) {
-    return NextResponse.json(
-      { error: { message: "Body too large.", code: "payload_too_large" } },
-      { status: 413 },
-    );
+    return apiError(413, "Body too large.", "payload_too_large");
   }
   const rawBody = await readBodyCapped(request, MAX_WEBHOOK_BODY_BYTES);
   if (rawBody === null) {
-    return NextResponse.json(
-      { error: { message: "Body too large.", code: "payload_too_large" } },
-      { status: 413 },
-    );
+    return apiError(413, "Body too large.", "payload_too_large");
   }
 
   let event: Stripe.Event;
@@ -166,19 +162,21 @@ export async function POST(request: NextRequest) {
       "[stripe-webhook] signature verification failed:",
       err instanceof Error ? err.message : err,
     );
-    return NextResponse.json(
-      { error: { message: "Signature verification failed.", code: "invalid_signature" } },
-      { status: 400 },
-    );
+    return apiError(400, "Signature verification failed.", "invalid_signature");
   }
 
   // DELTA-005: at-least-once with dedup. Verified events are recorded in
   // billing_processed_events (migrations/20260911000000); a repeat delivery
   // short-circuits. Handlers remain idempotent state-writes, so the tiny
   // race between two concurrent duplicate deliveries is benign.
-  const dedupAdmin = getAdmin();
+  //
+  // getAdmin() and the dedup lookup sat outside the handler's try, so a
+  // transport-level throw here escaped as an unstructured Next 500 instead of
+  // the documented webhook_handler_failed envelope. Wrap the whole thing.
+  let dedupAdmin: ReturnType<typeof getAdmin> | null = null;
   let duplicate = false;
-  {
+  try {
+    dedupAdmin = getAdmin();
     const { data: seen, error: seenError } = await dedupAdmin.database
       .from("billing_processed_events")
       .select("event_id")
@@ -190,18 +188,27 @@ export async function POST(request: NextRequest) {
     } else if (seen) {
       duplicate = true;
     }
+  } catch (err) {
+    // Fail open for the same reason: reprocessing an idempotent state write is
+    // safer than dropping the event on a ledger read failure.
+    console.error(
+      `[stripe-webhook] dedup lookup threw for ${event.id}:`,
+      err instanceof Error ? err.message : err,
+    );
   }
   if (duplicate) {
     console.log(`[stripe-webhook] duplicate ${event.type} (id=${event.id}); skipping`);
     return NextResponse.json({
       received: true,
       type: event.type,
-      handled: HANDLED_EVENTS.has(event.type),
+      handled: IMPLEMENTED_EVENTS.has(event.type),
+      implemented: IMPLEMENTED_EVENTS.has(event.type),
+      acknowledged: ACKNOWLEDGED_EVENTS.has(event.type),
       duplicate: true,
     });
   }
 
-  const handled = HANDLED_EVENTS.has(event.type);
+  const handled = IMPLEMENTED_EVENTS.has(event.type);
 
   try {
     switch (event.type) {
@@ -249,24 +256,45 @@ export async function POST(request: NextRequest) {
         const sub = event.data.object as Stripe.Subscription;
         const customerId = typeof sub.customer === "string" ? sub.customer : sub.customer.id;
         const profile = await getProfileByCustomerId(customerId);
-        if (profile) {
-          await updateProfileBilling(profile.id, {
-            subscription_status: "canceled",
-            current_plan_name: "free",
-            current_period_end: null,
-          });
+        // A cancellation that finds no profile used to be dropped silently:
+        // no else, no throw, response still `handled: true`, and the customer
+        // kept their paid plan after cancelling. Fail loudly so Stripe retries
+        // and the mismatch is visible instead of silently granting service.
+        if (!profile) {
+          throw new Error(
+            `Subscription cancelled for Stripe customer ${customerId} but no profile is linked; entitlements were not revoked.`,
+          );
         }
+        await updateProfileBilling(profile.id, {
+          subscription_status: "canceled",
+          current_plan_name: "free",
+          current_period_end: null,
+        });
         break;
       }
       case "invoice.payment_failed": {
         const invoice = event.data.object as Stripe.Invoice;
         const customerId = typeof invoice.customer === "string" ? invoice.customer : invoice.customer?.id;
-        if (customerId) {
-          const profile = await getProfileByCustomerId(customerId);
-          if (profile) {
-            await updateProfileBilling(profile.id, { subscription_status: "past_due" });
-          }
+        // No customer on the invoice means there is nothing to scope a sync to —
+        // acknowledging is correct. The missing-PROFILE case below is the one
+        // that silently dropped a dunning failure while the account stayed
+        // active, so that one fails loudly and lets Stripe retry.
+        if (!customerId) {
+          console.warn(
+            `[stripe-webhook] invoice.payment_failed with no customer (invoice ${invoice.id}); nothing to sync`,
+          );
+          break;
         }
+        const profile = await getProfileByCustomerId(customerId);
+        // Same silent-drop shape as the cancellation above: an unlinked profile
+        // meant a failed payment was acknowledged as handled while the account
+        // stayed active and past_due was never recorded.
+        if (!profile) {
+          throw new Error(
+            `Payment failed for Stripe customer ${customerId} but no profile is linked; past_due was not recorded.`,
+          );
+        }
+        await updateProfileBilling(profile.id, { subscription_status: "past_due" });
         break;
       }
       default:
@@ -278,25 +306,52 @@ export async function POST(request: NextRequest) {
     // Silently 200-ing here would drop the event permanently.
     const message = err instanceof Error ? err.message : String(err);
     console.error(`[stripe-webhook] handler error for ${event.type} (id=${event.id}): ${message}`);
-    return NextResponse.json(
-      { error: { message: "Webhook handler failed; the event will be retried.", code: "webhook_handler_failed" } },
-      { status: 500 },
+    return apiError(
+      500,
+      "Webhook handler failed; the event will be retried.",
+      "webhook_handler_failed",
     );
   }
 
-  const { error: recordError } = await dedupAdmin.database
-    .from("billing_processed_events")
-    .insert([{ event_id: event.id, event_type: event.type }]);
-  if (recordError && (recordError as { code?: string }).code !== "23505") {
-    // Non-fatal: the handlers are idempotent, so a missed ledger row only
-    // means a retried delivery would reprocess the same state.
-    console.error(`[stripe-webhook] failed to record ${event.id}: ${JSON.stringify(recordError)}`);
+  // The ledger write is the last thing that can throw, so it is guarded too —
+  // an unstructured 500 here would look identical to a handler failure to Stripe.
+  // dedupAdmin is null when the client could not even be constructed above.
+  if (!dedupAdmin) {
+    console.error(
+      `[stripe-webhook] no admin client; skipping ledger write for ${event.id}. ` +
+        `A retry may reprocess this event.`,
+    );
+  } else {
+    try {
+      const { error: recordError } = await dedupAdmin.database
+        .from("billing_processed_events")
+        .insert([{ event_id: event.id, event_type: event.type }]);
+      if (recordError && (recordError as { code?: string }).code !== "23505") {
+        // Non-fatal: the handlers are idempotent, so a missed ledger row only
+        // means a retried delivery would reprocess the same state.
+        console.error(`[stripe-webhook] failed to record ${event.id}: ${JSON.stringify(recordError)}`);
+      }
+    } catch (err) {
+      console.error(
+        `[stripe-webhook] ledger write threw for ${event.id}:`,
+        err instanceof Error ? err.message : err,
+      );
+    }
   }
 
   console.log(
-    `[stripe-webhook] ${handled ? "handled" : "unhandled"} ${event.type} (id=${event.id})`,
+    `[stripe-webhook] ${handled ? "handled" : "acknowledged-only"} ${event.type} (id=${event.id})`,
   );
-  return NextResponse.json({ received: true, type: event.type, handled, duplicate: false });
+  return NextResponse.json({
+    received: true,
+    type: event.type,
+    // `handled` is reserved for events that really did change billing state.
+    handled,
+    implemented: handled,
+    // Acknowledged-but-unimplemented events are verified and logged only.
+    acknowledged: ACKNOWLEDGED_EVENTS.has(event.type),
+    duplicate: false,
+  });
 }
 
 // Stripe sends a GET when you configure a destination from the Dashboard

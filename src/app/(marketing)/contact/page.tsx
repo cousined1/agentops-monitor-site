@@ -9,7 +9,7 @@ export const metadata: Metadata = {
 
 export default function ContactPage() {
   return (
-    <main>
+    <main id="main" tabIndex={-1}>
       <section>
         <p className="eyebrow">Contact</p>
         <h1>Talk to us.</h1>

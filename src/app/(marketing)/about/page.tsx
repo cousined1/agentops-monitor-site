@@ -9,7 +9,7 @@ export const metadata: Metadata = {
 
 export default function AboutPage() {
   return (
-    <main>
+    <main id="main" tabIndex={-1}>
       <section>
         <p className="eyebrow">About</p>
         <h1>Find the call that cost you four hundred dollars.</h1>
@@ -27,7 +27,7 @@ export default function AboutPage() {
         <p>
           An agent with no budget is an incident waiting to be invoiced. AgentOps Monitor catches that: you see the exact call that cost you, and you see it before the invoice arrives.
         </p>
-        <p>We turn every run into a replayable trace with a hard budget cap.</p>
+        <p>We turn every run into a replayable trace, with the cost of every call attached.</p>
       </section>
 
       <section>

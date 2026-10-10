@@ -81,7 +81,9 @@ describe("billing portal route coverage", () => {
     const response = await POST(portalRequest());
 
     expect(response.status).toBe(401);
-    await expect(response.json()).resolves.toEqual({ error: "Unauthorized" });
+    await expect(response.json()).resolves.toEqual({
+      error: { message: "Unauthorized", code: "unauthorized" },
+    });
   });
 
   it("returns 400 no_customer when the profile has no Stripe customer", async () => {

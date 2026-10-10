@@ -26,7 +26,7 @@ export default async function HomePage() {
   }
 
   return (
-    <>
+    <main id="main" tabIndex={-1}>
       <section className="hero">
         <div className="hero-grid">
           <div>
@@ -71,11 +71,11 @@ export default async function HomePage() {
       <section id="cost">
         <h2>Track every dollar an agent spends</h2>
         <p>
-          Tokens in and out, USD per span, total per run. Catch the agent that loops 64K tokens before it invoices you. Set a hard budget cap at the workflow, the agent, or the user: the run stops at the limit you set.
+          Tokens in and out, USD per span, total per run. Catch the agent that loops 64K tokens before it invoices you. Every span keeps its model, tool, duration, and raw input and output, so you can see exactly which call cost you.
         </p>
         <p>
           <a className="cta cta-primary" href="/pricing">See pricing</a>{" "}
-          <a className="cta cta-ghost" href="/signup">Set a budget cap</a>
+          <a className="cta cta-ghost" href="/signup">Start tracking spend</a>
         </p>
       </section>
 
@@ -100,6 +100,6 @@ export default async function HomePage() {
           <a className="cta cta-ghost" href="/signup">Start free</a>
         </p>
       </section>
-    </>
+    </main>
   );
 }

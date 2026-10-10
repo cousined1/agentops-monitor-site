@@ -17,7 +17,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             </Link>
           </div>
         </header>
-        <main className="dashboard">
+        <main id="main" tabIndex={-1} className="dashboard">
           <section>
             <h1>Authentication is temporarily unavailable</h1>
             <p className="auth-error">
@@ -56,7 +56,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           </form>
         </div>
       </header>
-      <main className="dashboard">{children}</main>
+      <main id="main" tabIndex={-1} className="dashboard">{children}</main>
     </>
   );
 }

@@ -99,7 +99,12 @@ export default async function BillingPage({
         <h1>Billing</h1>
         <p className="lede">Your subscription status, synced from Stripe.</p>
         {params.status === "success" ? (
-          <p role="status">Checkout complete. Your billing status will refresh automatically.</p>
+          <p role="status">
+            Payment received. Stripe is still confirming your subscription, so this
+            page can briefly show your previous plan. Refresh in a moment to see the
+            update.{" "}
+            <Link href="/billing">Refresh now</Link>
+          </p>
         ) : null}
       </section>
 

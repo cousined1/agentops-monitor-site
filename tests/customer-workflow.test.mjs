@@ -89,7 +89,9 @@ describe("Customer MVP Workflow Simulation", () => {
     });
 
     mockFrom.mockReturnValue({
-      insert: vi.fn().mockResolvedValue({ error: null }),
+      insert: vi.fn(() => ({
+        select: vi.fn(async () => ({ data: [{ id: "key-mvp-1" }], error: null })),
+      })),
     });
 
     const { POST } = await import("../src/app/api/api-keys/route.ts");
@@ -388,7 +390,15 @@ describe("F-03 entitlement self-heal", () => {
 
   it("updateProfileBilling upserts so a plan assignment is never dropped", async () => {
     const upsert = vi.fn().mockResolvedValue({ data: null, error: null });
-    mockFrom.mockReturnValue({ upsert });
+    const eq = vi.fn(() => ({
+      then: (resolve) =>
+        Promise.resolve({
+          data: [{ id: USER.id, email: USER.email }],
+          error: null,
+        }).then(resolve),
+    }));
+    const select = vi.fn(() => ({ eq }));
+    mockFrom.mockReturnValue({ upsert, select });
 
     const { updateProfileBilling } = await import("../src/lib/billing.ts");
     await updateProfileBilling(USER.id, {
@@ -403,6 +413,62 @@ describe("F-03 entitlement self-heal", () => {
         subscription_status: "active",
       }),
     ]);
+  });
+
+  it("updateProfileBilling carries a non-null email so the upsert can insert", async () => {
+    // profiles.email is `text not null` with no default
+    // (migrations/20260819230452_agentops-monitor-v1.sql:12) and PostgREST
+    // compiles the upsert to INSERT ... ON CONFLICT DO UPDATE. An upsert that
+    // omits `email` therefore failed 23502 on exactly the case the upsert
+    // exists for - a missing profile row - so the webhook could never repair a
+    // plan assignment and the customer stayed on `free` while paying.
+    const upsert = vi.fn().mockResolvedValue({ data: null, error: null });
+    const eq = vi.fn(() => ({
+      then: (resolve) =>
+        Promise.resolve({ data: [{ id: USER.id, email: "stored@example.com" }], error: null }).then(
+          resolve,
+        ),
+    }));
+    mockFrom.mockReturnValue({ upsert, select: vi.fn(() => ({ eq })) });
+
+    const { updateProfileBilling } = await import("../src/lib/billing.ts");
+    await updateProfileBilling(USER.id, { current_plan_name: "team" });
+
+    const [row] = upsert.mock.calls[0][0];
+    expect(row.email).toBe("stored@example.com");
+    expect(row.email).not.toBeNull();
+    expect(row.email).not.toBeUndefined();
+  });
+
+  it("updateProfileBilling falls back to the caller-supplied email when no row exists", async () => {
+    const upsert = vi.fn().mockResolvedValue({ data: null, error: null });
+    const eq = vi.fn(() => ({
+      then: (resolve) => Promise.resolve({ data: [], error: null }).then(resolve),
+    }));
+    mockFrom.mockReturnValue({ upsert, select: vi.fn(() => ({ eq })) });
+
+    const { updateProfileBilling } = await import("../src/lib/billing.ts");
+    await updateProfileBilling(USER.id, { current_plan_name: "team" }, "webhook@example.com");
+
+    const [row] = upsert.mock.calls[0][0];
+    expect(row.email).toBe("webhook@example.com");
+  });
+
+  it("updateProfileBilling refuses to write a row the schema cannot accept", async () => {
+    // Neither a stored row nor a caller email means there is no way to satisfy
+    // profiles.email. Writing anyway just moves the failure to a raw 23502 from
+    // the database, so it must be refused here instead.
+    const upsert = vi.fn().mockResolvedValue({ data: null, error: null });
+    const eq = vi.fn(() => ({
+      then: (resolve) => Promise.resolve({ data: [], error: null }).then(resolve),
+    }));
+    mockFrom.mockReturnValue({ upsert, select: vi.fn(() => ({ eq })) });
+
+    const { updateProfileBilling } = await import("../src/lib/billing.ts");
+    await expect(
+      updateProfileBilling(USER.id, { current_plan_name: "team" }),
+    ).rejects.toThrow(/profiles\.email/);
+    expect(upsert).not.toHaveBeenCalled();
   });
 
   it("ensureProfileBilling repairs a missing profile via upsert", async () => {
@@ -468,11 +534,134 @@ describe("F-07 marketing truth and span detail", () => {
   it("features page tags unreleased capabilities as Planned / Roadmap", () => {
     const features = read("src/app/(marketing)/features/page.tsx");
     expect(features).toContain("Planned / Roadmap");
-    expect(features).toContain("Real-time automated budget killing");
-    expect(features).toContain("Multi-region SSO");
-    expect(features).toContain("LangChain");
+    expect(features).toMatch(/Multi-region SSO/);
+    expect(features).toMatch(/LangChain/);
     // The adapters are not shipped yet; claiming they ship is an unbacked claim.
     expect(features).not.toContain("The SDK ships ingestion");
+  });
+
+  it("budget caps are never presented as a shipped feature", () => {
+    // Budget caps were sold as current ("A run stops at the limit you set") with a
+    // config example, while no route or migration enforced any cap. The guard
+    // used to pin one exact roadmap sentence instead of the rule, so rewording
+    // the roadmap silently dropped the protection. Assert the rule itself.
+    const pages = [
+      "src/app/page.tsx",
+      "src/app/(marketing)/features/page.tsx",
+      "src/app/(marketing)/docs/page.tsx",
+      "src/app/(marketing)/help/page.tsx",
+      "src/app/(marketing)/about/page.tsx",
+    ];
+
+    const currentClaim = /hard budget (cap|limit)|stops at the limit|cap the spend/i;
+    for (const page of pages) {
+      expect(read(page), `${page} makes a current budget-cap claim`).not.toMatch(
+        currentClaim,
+      );
+    }
+
+    // And the caps must still be visible as roadmap, not quietly dropped.
+    const features = read("src/app/(marketing)/features/page.tsx");
+    expect(features).toMatch(/Spend caps and automated budget enforcement/i);
+    expect(features).toMatch(/does not stop a run or refuse a spend/i);
+  });
+
+  it("login offers a password reset path", () => {
+    const login = read("src/app/login/page.tsx");
+    expect(login).toContain("/reset-password");
+    expect(login).toContain("Forgot your password?");
+  });
+
+  it("reset flow uses the SDK reset methods and never leaks account existence", () => {
+    const reset = read("src/app/reset-password/page.tsx");
+
+    expect(reset).toContain("sendResetPasswordEmail");
+    expect(reset).toContain("exchangeResetPasswordToken");
+    expect(reset).toContain("resetPassword");
+    // The request step must not reveal whether an address has an account: the
+    // success copy is shown whether or not the backend accepted the address.
+    expect(reset).toMatch(/If an account exists for that address/);
+    // Enforced in code rather than relying on the backend to reject a short one.
+    expect(reset).toMatch(/min\(MIN_PASSWORD_LENGTH/);
+  });
+
+  it("sign-out always redirects, even when signOut throws", async () => {
+    // An unhandled throw from signOut() escaped the handler and rendered an
+    // unstructured Next 500, so clicking "Sign out" could crash the page.
+    mockAuth.signOut.mockRejectedValueOnce(new Error("auth backend down"));
+    const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    try {
+      const { POST } = await import("../src/app/api/auth/sign-out/route.ts");
+      const { NextRequest } = await import("next/server");
+
+      const res = await POST(
+        new NextRequest("https://agentopsmonitor.com/api/auth/sign-out", { method: "POST" }),
+      );
+
+      expect(res.status).toBe(303);
+      expect(res.headers.get("location")).toBe("https://agentopsmonitor.com/login");
+    } finally {
+      errSpy.mockRestore();
+    }
+  });
+
+  it("webhook guards the dedup and ledger writes, not just the handlers", () => {
+    const webhook = read("src/app/api/stripe/webhook/route.ts");
+
+    // getAdmin() and the dedup lookup sat outside the handler try, so a
+    // transport-level throw escaped as an unstructured 500 rather than the
+    // documented webhook_handler_failed envelope.
+    expect(webhook).toMatch(/let dedupAdmin:[\s\S]*?\| null = null/);
+    expect(webhook).toMatch(/if \(!dedupAdmin\)/);
+    expect(webhook).toMatch(/ledger write threw for/);
+  });
+
+  it("pricing does not promise overage billing that does not happen", () => {
+    const pricing = read("src/app/(marketing)/pricing/page.tsx");
+
+    // The free cap is enforced; Team overage is NOT metered or billed. Saying
+    // "$1.00 per 1,000 runs ... (metered)" on its own sells a charge that never
+    // arrives, so the copy has to say which half is real.
+    expect(pricing).not.toMatch(/\$1\.00 per 1,000 runs after the first 500K \(metered\)/);
+    expect(pricing).toMatch(/Team overage is not charged yet/);
+    expect(pricing).toMatch(/10,000 runs per month\s*is enforced at ingest/);
+  });
+
+  it("every public surface agrees on what is and is not enforced", () => {
+    // The same over-promise lived on the Next pages, the static index.html (incl.
+    // JSON-LD FAQ text that search overviews quote), the chatbot script, and the
+    // llms.txt files. Fixing one surface left the others contradicting it, so the
+    // claim is now asserted across all of them.
+    const surfaces = [
+      "index.html",
+      "public/aom-chatbot.js",
+      "public/llms.txt",
+      "public/llms-full.txt",
+      "src/app/(marketing)/features/page.tsx",
+      "src/app/(marketing)/docs/page.tsx",
+      "src/app/(marketing)/help/page.tsx",
+      "src/app/(marketing)/pricing/page.tsx",
+      "src/app/page.tsx",
+      // Design explorations are not served, but one of these is the file that
+      // gets promoted to the root index.html. An over-claim parked here is an
+      // over-claim one copy-paste away from production.
+      "variants/v1/index.html",
+      "variants/v2/index.html",
+      "variants/v3/index.html",
+    ];
+
+    const currentClaim =
+      /hard budget cap|stops at the limit|cap the spend|enforces spending caps|billed monthly on actual usage/i;
+    for (const surface of surfaces) {
+      expect(read(surface), `${surface} makes a current over-claim`).not.toMatch(
+        currentClaim,
+      );
+    }
+
+    // The free-tier cap is real and must be described as enforced everywhere it
+    // is mentioned, so a customer is not told a limit exists when it does not.
+    expect(read("public/llms-full.txt")).toMatch(/enforced at ingest/i);
+    expect(read("src/app/(marketing)/docs/page.tsx")).toMatch(/quota_exceeded/);
   });
 
   it("about page tags unreleased capabilities as Planned / Roadmap", () => {

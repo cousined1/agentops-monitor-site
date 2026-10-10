@@ -43,7 +43,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Privacy · AgentOps Monitor</title>
-  <meta name="description" content="Privacy notice for AgentOps Monitor. Consent-gated Google Tag Manager, first-party lead storage, retention set by configured policy.">
+  <meta name="description" content="Privacy notice for AgentOps Monitor. Consent-gated Google Tag Manager, first-party lead storage, and how agent run and span data is stored and retained.">
   <meta name="robots" content="index, follow">
   <link rel="canonical" href="https://agentopsmonitor.com/privacy">
   <meta property="og:title" content="Privacy · AgentOps Monitor">
@@ -115,19 +115,27 @@
     </section>
 
     <section class="legal-block">
+      <h2>How we store agent run data</h2>
+      <p>When you send us a trace, we store the agent run and its spans, including the input you supply and the output the agent produced. That data commonly contains the full text of your model prompts, model completions, tool arguments, and tool results, so it can contain personal data and secrets such as credentials that appear in your own prompts.</p>
+      <p>This data is stored in our database in plain text. It is not encrypted at rest; the only protection in transit is the HTTPS connection that sends it. Anyone with direct access to our database, or a backup of it, can read the contents of your prompts and outputs. Access is restricted by tenant: your data is readable only from your own account, and every query is filtered to your account on the server.</p>
+    </section>
+
+    <section class="legal-block">
       <h2>Data retention</h2>
-      <p>Request log retention follows the hosting platform default. Chat lead submissions are now stored in a dedicated first-party lead store (the details you submit plus the conversation transcript, with a submission timestamp) rather than only in hosting logs. Leads are used to respond to your enquiry and are deleted on request; a fixed automated deletion schedule is on our remediation list. The product audit trail, once shipped, will be retained according to the configured policy window in each workspace.</p>
+      <p>Agent run and span data is retained indefinitely. There is currently no automated retention or deletion schedule for it, so it accumulates until it is deleted. You can erase it yourself at any time: a signed-in <code>DELETE /api/account</code> request removes every run, span, API key, usage record, and profile row associated with your account. That request does not delete your login identity, because our authentication platform offers no application-level way to remove it. Contact the address below and we will complete that final step by hand.</p>
+      <p>Request log retention follows the hosting platform default. Chat lead submissions are stored in a dedicated first-party lead store (the details you submit plus the conversation transcript, with a submission timestamp) rather than only in hosting logs. Leads are used to respond to your enquiry and are deleted on request; a fixed automated deletion schedule for leads is on our remediation list.</p>
     </section>
 
     <section class="legal-block">
       <h2>Your rights under GDPR and similar laws</h2>
-      <p>If you are in the European Economic Area, the United Kingdom, California, or another jurisdiction with similar rights, you can request access to or deletion of any personal data held in request logs or chat lead submissions. Contact the address below with the request and, for chat leads, the email address you submitted.</p>
+      <p>If you are in the European Economic Area, the United Kingdom, California, or another jurisdiction with similar rights, you can request access to or deletion of any personal data we hold about you. That includes agent run and span data, not only request logs and chat lead submissions, because run and span data is the primary data this product stores. Contact the address below with the request and, for chat leads, the email address you submitted.</p>
+      <p>Deletion of run and span data is self-service: send a signed-in <code>DELETE /api/account</code> request and every run, span, API key, usage record, and profile row for your account is removed. We do not currently offer a self-service export of your data; ask us and we will provide what we hold.</p>
     </section>
 
     <section class="legal-block">
       <h2>Contact</h2>
       <p>Privacy questions: <a href="mailto:support@agentopsmonitor.com">support@agentopsmonitor.com</a>.</p>
-      <p>This notice is effective as of September 2026.</p>
+      <p>This notice is effective as of October 2026.</p>
     </section>
 
     <p class="legal-back"><a href="/">Back to the site</a></p>

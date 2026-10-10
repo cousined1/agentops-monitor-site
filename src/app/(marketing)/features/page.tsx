@@ -9,7 +9,7 @@ export const metadata: Metadata = {
 
 export default function FeaturesPage() {
   return (
-    <main>
+    <main id="main" tabIndex={-1}>
       <section>
         <p className="eyebrow">Product</p>
         <h1>Six things AgentOps Monitor does for your agents.</h1>
@@ -45,21 +45,26 @@ export default function FeaturesPage() {
       </section>
 
       <section>
-        <h2>Cap the spend with hard budget limits</h2>
+        <h2>Every span, with the cost attached</h2>
         <p>
-          Set caps at the workflow, the agent, or the user. A run stops at the limit you set, not at the limit your CFO finds out about.
+          Each span records its model, provider, tool name, status, duration, USD
+          cost, and the raw input and output your agent reported. The dashboard
+          ranks the runs that cost the most, so an expensive loop is visible while
+          it is still running rather than on an invoice.
         </p>
-        <pre className="install"><code>refund.cap_per_run_usd: 50
-require_approval_above: 250
-stripe.refunds.create: hold_above_usd: 100
-loop.max_retries: 3
-halt_after_seconds: 60</code></pre>
+        <pre className="install"><code>GET /api/ingest
+  run   → agent_name, status, tokens_in/out, cost_usd
+  span  → model, tool_name, status, duration_ms, cost_usd, input, output</code></pre>
       </section>
 
       <section>
         <h2>Audit every decision</h2>
         <p>
-          The audit trail captures prompt hashes, model output, tool calls, human approvals, and policy decisions. SOC 2 / HIPAA / GDPR badges are not claimed on this page. The audit trail is the product.
+          The trace keeps what actually ran: the model and provider behind each
+          call, which tool was invoked, the input and output payloads, and the
+          cost and duration of every span. Human approval workflows and policy
+          decisions are not captured yet - they are on the roadmap below. SOC 2 /
+          HIPAA / GDPR badges are not claimed on this page.
         </p>
       </section>
 
@@ -89,7 +94,8 @@ halt_after_seconds: 60</code></pre>
           These capabilities are planned and are not built yet. They are listed here so the roadmap is public, not implied.
         </p>
         <ul>
-          <li>Real-time automated budget killing: halt overspending runs the moment a cap is crossed, without waiting for the run to end.</li>
+          <li>Spend caps and automated budget enforcement: halt a run when it crosses a limit you set, per workflow, agent, or user. Today the product records the cost your agent reports at ingest and does not stop a run or refuse a spend.</li>
+          <li>Human approval workflows and policy decisions in the audit trail, so a run that needs sign-off records that sign-off.</li>
           <li>Multi-region SSO: SAML and OIDC sign-in across regions for enterprise fleets.</li>
           <li>Framework adapters for LangChain, CrewAI, the OpenAI SDK, and the Anthropic SDK, so ingestion is one import instead of one HTTP call.</li>
         </ul>

@@ -20,7 +20,7 @@ function withNext(path: string, next: string) {
 export default async function LoginPage({
   searchParams,
 }: {
-  searchParams: Promise<{ next?: string; error?: string }>;
+  searchParams: Promise<{ next?: string; error?: string; reset?: string }>;
 }) {
   const params = await searchParams;
   const next = safeRedirectPath(params.next);
@@ -67,10 +67,13 @@ export default async function LoginPage({
   }
 
   return (
-    <main className="auth-shell">
+    <main id="main" tabIndex={-1} className="auth-shell">
       <section className="auth-card">
         <h1>Sign in</h1>
         <p className="lede">Use the AgentOps Monitor dashboard.</p>
+        {params.reset ? (
+          <p role="status">Your password has been updated. Sign in with your new password.</p>
+        ) : null}
         {params.error ? <p className="auth-error">{params.error}</p> : null}
         <form action={login} className="auth-form">
           <label>
@@ -83,6 +86,9 @@ export default async function LoginPage({
           </label>
           <button className="cta cta-primary" type="submit">Sign in</button>
         </form>
+        <p>
+          <Link href="/reset-password">Forgot your password?</Link>
+        </p>
         <p>
           Need an account? <Link href={withNext("/signup", next)}>Create one</Link>.
         </p>

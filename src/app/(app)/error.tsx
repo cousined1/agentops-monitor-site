@@ -17,7 +17,8 @@ export default function AppError({
   }, [error]);
 
   return (
-    <main>
+    // id="main" so the layout's skip link resolves here too.
+    <main id="main" tabIndex={-1}>
       <section>
         <h1>Something went wrong</h1>
         <p className="lede">
@@ -31,6 +32,12 @@ export default function AppError({
             Back to dashboard
           </Link>
         </p>
+        {error.digest ? (
+          <p className="lede">
+            If this keeps happening, quote reference{" "}
+            <code>{error.digest}</code> when you contact support.
+          </p>
+        ) : null}
       </section>
     </main>
   );

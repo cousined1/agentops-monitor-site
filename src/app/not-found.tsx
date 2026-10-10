@@ -8,7 +8,10 @@ export const metadata: Metadata = {
 
 export default function NotFound() {
   return (
-    <main className="not-found">
+    // id="main" + tabIndex={-1} mirror every other page: the layout's skip link
+    // targets #main, and without this anchor a keyboard user pressing
+    // "Skip to content" on a 404 stayed at the top of the nav.
+    <main id="main" tabIndex={-1} className="not-found">
       <section>
         <p className="eyebrow">404</p>
         <h1>This page is not on the dashboard.</h1>

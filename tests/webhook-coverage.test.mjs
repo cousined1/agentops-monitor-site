@@ -257,10 +257,43 @@ describe("stripe webhook coverage closure", () => {
       received: true,
       type: "charge.refunded",
       handled: false,
+      implemented: false,
+      acknowledged: false,
       duplicate: false,
     });
     expect(updateProfileBilling).not.toHaveBeenCalled();
     expect(ledger.seen.has("evt_unhandled_1")).toBe(true);
+  });
+
+  it("does not report handled:true for events that change no billing state", async () => {
+    const { POST } = await loadRoute();
+
+    // `handled` used to be derived from a list of 14 event types against only 5
+    // switch cases, so `invoice.paid` and friends were reported handled while
+    // doing nothing - Stripe's delivery log then showed them as processed.
+    for (const type of [
+      "invoice.paid",
+      "invoice.created",
+      "invoice.finalized",
+      "payment_intent.succeeded",
+      "payment_intent.payment_failed",
+      "customer.created",
+      "customer.deleted",
+      "customer.subscription.trial_will_end",
+      "billing.meter.error_report_triggered",
+    ]) {
+      const response = await POST(
+        signedRequest(makeEvent(`evt_ack_${type}`, type, { object: "x" })),
+      );
+      expect(response.status).toBe(200);
+      const body = await response.json();
+
+      expect(body.handled, `${type} must not claim to be handled`).toBe(false);
+      // Still acknowledged, so the endpoint is not left retrying forever.
+      expect(body.acknowledged, `${type} should still be acknowledged`).toBe(true);
+      expect(body.received).toBe(true);
+    }
+    expect(updateProfileBilling).not.toHaveBeenCalled();
   });
 
   it("fails open when the dedup lookup errors, then processes the event", async () => {
@@ -411,6 +444,63 @@ describe("stripe webhook coverage closure", () => {
 
     expect(response.status).toBe(200);
     expect(updateProfileBilling).not.toHaveBeenCalled();
+  });
+
+  it("does not silently drop a cancellation for an unlinked customer", async () => {
+    const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    try {
+      getProfileByCustomerId.mockResolvedValue(null);
+      const { POST } = await loadRoute();
+
+      const response = await POST(
+        signedRequest(
+          makeEvent("evt_cancel_unlinked_1", "customer.subscription.deleted", {
+            object: "subscription",
+            customer: "cus_unlinked",
+          }),
+        ),
+      );
+
+      // The handler used to `if (profile) {...}` with no else: the cancellation
+      // was dropped, the response still said handled:true, and the customer kept
+      // their paid plan after cancelling. It must fail loudly so Stripe retries
+      // and the mismatch is visible.
+      expect(response.status).toBe(500);
+      await expect(response.json()).resolves.toEqual({
+        error: {
+          message: "Webhook handler failed; the event will be retried.",
+          code: "webhook_handler_failed",
+        },
+      });
+      expect(updateProfileBilling).not.toHaveBeenCalled();
+      expect(ledger.seen.has("evt_cancel_unlinked_1")).toBe(false);
+    } finally {
+      errSpy.mockRestore();
+    }
+  });
+
+  it("does not silently drop a dunning failure for an unlinked customer", async () => {
+    const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    try {
+      getProfileByCustomerId.mockResolvedValue(null);
+      const { POST } = await loadRoute();
+
+      const response = await POST(
+        signedRequest(
+          makeEvent("evt_past_due_unlinked_1", "invoice.payment_failed", {
+            object: "invoice",
+            customer: "cus_unlinked",
+          }),
+        ),
+      );
+
+      // Same shape as the cancellation: an unlinked profile meant the payment
+      // failure was acknowledged as handled while the account stayed active.
+      expect(response.status).toBe(500);
+      expect(updateProfileBilling).not.toHaveBeenCalled();
+    } finally {
+      errSpy.mockRestore();
+    }
   });
 
   it("a non-duplicate ledger write failure is logged but still returns 200", async () => {

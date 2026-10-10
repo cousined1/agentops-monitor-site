@@ -8,7 +8,7 @@ export const metadata: Metadata = {
 
 export default function IntegrationsPage() {
   return (
-    <main>
+    <main id="main" tabIndex={-1}>
       <section>
         <p className="eyebrow">Integrations</p>
         <h1>Frameworks and tools you already run.</h1>

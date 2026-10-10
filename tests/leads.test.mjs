@@ -65,8 +65,11 @@ describe("leads endpoint hardening (DELTA-003 + audit persistence)", () => {
     );
     // Telling the visitor "ok" while their details were dropped is the defect.
     expect(res.status).toBe(503);
-    await expect(res.json()).resolves.toEqual({
-      error: "We could not record your details. Please try again in a moment.",
+await expect(res.json()).resolves.toEqual({
+    error: {
+      message: "We could not record your details. Please try again in a moment.",
+      code: "write_failed",
+    },
     });
   });
 

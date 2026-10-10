@@ -19,20 +19,16 @@ AgentOps Monitor (https://agentopsmonitor.com) is an observability and reliabili
 ## 2. Core Architecture & Features
 
 ### 2.1 Distributed Multi-Agent Tracing
-- OpenTelemetry (OTLP) compatible trace collector.
-- Visual execution graph showing parent agents, subagents, tool invocations, and LLM reasoning steps.
-- Sub-millisecond trace ingestion pipeline with end-to-end latency profiling.
-- Support for asynchronous agent communication patterns (pub/sub, direct message, blackboard).
+- JSON ingest over HTTPS. An OpenTelemetry collector is planned; OTLP compatibility is not available today.
+- Run detail view listing spans with type, status, timing, tokens, and cost, with parent and child span ids.
 
 ### 2.2 Cost and Token Analytics
-- Real-time tracking of input tokens, output tokens, cached tokens, and reasoning tokens.
-- Cost attribution grouped by agent role, model provider, prompt template, user ID, or organization workspace.
-- Configurable circuit breakers: automatically pause agents or abort runs when token or spend thresholds are reached.
+- Input and output token counts per run and per span, recorded as sent by the client at ingest.
+- Cost per run and per span, recorded as sent by the client at ingest.
+- Spend limits are not enforced at ingest. A per-run cost cap is planned.
 
 ### 2.3 Agent Security Guardrails
-- Input/Output scanner for prompt injections, jailbreaks, and sensitive data leakage (PII/credentials).
-- Tool authorization policies restricting execution of sensitive operations based on agent identity and session state.
-- Automated killswitches triggered by anomalous behavior or repeated validation failures.
+Not implemented. There is no prompt-injection scanner, no tool authorization policy engine, and no anomaly detection or killswitch logic in this product today.
 
 ### 2.4 Integration Surface
 AgentOps Monitor ingests through one authenticated HTTPS endpoint, so any language or framework can post traces without a vendor SDK:
@@ -106,26 +102,32 @@ All requests to the ingestion API require the `Authorization: Bearer <API_KEY>` 
   - Errors: 400 invalid JSON or schema, 413 body over 1 MB, 429 rate limit exceeded.
   - 200 response: `{ "ok": true, "run_id": "<uuid>", "span_count": <n> }`.
 - `GET https://agentopsmonitor.com/api/health`
-  - Returns service health and uptime status.
+  - Returns service liveness and the deployed build SHA. No uptime history is recorded.
 
 ---
 
 ## 5. Pricing and Plans
 
+**One quota is enforced: the Free-tier monthly run cap.** `plans.included_runs` for the free
+plan (10,000) is checked inside the ingest transaction, and an over-limit request is rejected
+with HTTP 402 `quota_exceeded` plus `runs_used` and `runs_included`. The check fails open: if
+the plan lookup errors, ingest continues. Nothing else is enforced. `plans.overage_per_1k` is
+still read by no billing code, so no overage is metered or charged and the Team tier keeps
+ingesting past its published 500,000 figure rather than being cut off. Metered overage
+billing is on the roadmap.
+
 ### Developer (Free)
 - $0 / month
-- Up to 50,000 events / month
-- 7 days trace retention
-- Community support and core integrations
+- 10,000 runs per month, enforced at ingest (HTTP 402 when exceeded)
+- Community support
 
 ### Pro (Team)
 - $299 / month
-- Up to 500,000 runs / month
-- Cost alerts, budget caps, and priority support
+- 500,000 runs is published intent, not a hard limit: no cap is enforced and no overage is charged
+- A per-run cost cap is planned. Cost alerts are not implemented.
 
 ### Enterprise
-- Custom pricing / annual billing
-- Dedicated ingestion cluster, custom retention policies, SOC 2 compliance, SLA guarantees, and on-premises deployment options.
+- Contact us for pricing.
 
 ---
 

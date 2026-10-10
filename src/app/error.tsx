@@ -16,7 +16,8 @@ export default function GlobalError({
   }, [error]);
 
   return (
-    <main>
+    // id="main" so the layout's skip link resolves here too.
+    <main id="main" tabIndex={-1}>
       <section>
         <h1>Something went wrong</h1>
         <p className="lede">
@@ -27,6 +28,15 @@ export default function GlobalError({
             Try again
           </button>
         </p>
+        {error.digest ? (
+          // The digest is Next's correlation id between the browser render and
+          // the server log. Without showing it, a customer reporting a failure
+          // gives support nothing to search for.
+          <p className="lede">
+            If this keeps happening, quote reference{" "}
+            <code>{error.digest}</code> when you contact support.
+          </p>
+        ) : null}
       </section>
     </main>
   );

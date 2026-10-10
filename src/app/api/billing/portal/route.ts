@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerClient } from "@/lib/insforge";
 import { appEnv } from "@/lib/env";
 import { BillingConfigError, getProfileByUserId, getStripe } from "@/lib/billing";
+import { apiError } from "@/lib/api-error";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -16,20 +17,19 @@ async function requirePortalUser(insforge: InsforgeClient) {
     console.error("[billing/portal] auth check failed:", authError.message);
     return {
       user: null,
-      response: NextResponse.json(
-        {
-          error: {
-            message: "Authentication is temporarily unavailable. Please try again shortly.",
-            code: "auth_unavailable",
-          },
-        },
-        { status: 503 },
+      response: apiError(
+        503,
+        "Authentication is temporarily unavailable. Please try again shortly.",
+        "auth_unavailable",
       ),
     };
   }
   const user = userData?.user ?? null;
   if (!user) {
-    return { user: null, response: NextResponse.json({ error: "Unauthorized" }, { status: 401 }) };
+    return {
+      user: null,
+      response: apiError(401, "Unauthorized", "unauthorized"),
+    };
   }
   return { user, response: null };
 }
@@ -44,20 +44,14 @@ export async function POST(request: NextRequest) {
     env = appEnv();
   } catch (err) {
     console.error("[billing/portal] env validation failed:", err instanceof Error ? err.message : err);
-    return NextResponse.json(
-      { error: { message: "Billing is not configured.", code: "billing_not_configured" } },
-      { status: 503 },
-    );
+    return apiError(503, "Billing is not configured.", "billing_not_configured");
   }
 
   try {
     const stripe = getStripe();
     const profile = await getProfileByUserId(user.id);
     if (!profile?.stripe_customer_id) {
-      return NextResponse.json(
-        { error: { message: "No Stripe customer on file — subscribe to a plan first.", code: "no_customer" } },
-        { status: 400 },
-      );
+      return apiError(400, "No Stripe customer on file — subscribe to a plan first.", "no_customer");
     }
     const origin = (env.NEXT_PUBLIC_SITE_URL ?? new URL(request.url).origin).replace(/\/+$/, "");
     const portal = await stripe.billingPortal.sessions.create({
@@ -67,24 +61,17 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ url: portal.url });
   } catch (err) {
     if (err instanceof BillingConfigError) {
-      return NextResponse.json(
-        { error: { message: err.message, code: err.code } },
-        { status: 503 },
-      );
+      return apiError(503, err.message, err.code);
     }
     // P1: never leak Stripe/DB internals to the client.
     console.error(
       "[billing/portal] Stripe portal session failed:",
       err instanceof Error ? err.message : err,
     );
-    return NextResponse.json(
-      {
-        error: {
-          message: "Could not open the billing portal. Please try again or contact support.",
-          code: "portal_failed",
-        },
-      },
-      { status: 500 },
+    return apiError(
+      500,
+      "Could not open the billing portal. Please try again or contact support.",
+      "portal_failed",
     );
   }
 }

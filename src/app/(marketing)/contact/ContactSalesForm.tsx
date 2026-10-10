@@ -34,6 +34,10 @@ export default function ContactSalesForm() {
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    // A second Enter before the re-render lands sent a duplicate lead. The state
+    // update is async, so this guard - not just the disabled button - is what
+    // actually prevents a double submit.
+    if (busy) return;
     const form = event.currentTarget;
     const formData = new FormData(form);
     const email = (formData.get("email") ?? "").toString().trim();
@@ -92,7 +96,12 @@ export default function ContactSalesForm() {
         {busy ? "Sending…" : "Request a sales follow-up"}
       </button>
       {state.message ? (
-        <p className={state.kind === "error" ? "auth-error" : undefined} role="status">
+        <p
+          className={state.kind === "error" ? "auth-error" : undefined}
+          // Errors must interrupt; role="status" is a polite live region, so a
+          // failed submission was announced only when the screen reader chose to.
+          role={state.kind === "error" ? "alert" : "status"}
+        >
           {state.message}
         </p>
       ) : null}

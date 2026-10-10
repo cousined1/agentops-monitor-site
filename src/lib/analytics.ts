@@ -1,4 +1,20 @@
-export const GTM_ID = process.env.NEXT_PUBLIC_GTM_ID ?? "GTM-KL4BW5F2";
+// Single source of truth for the GTM container.
+//
+// This used to fall back to the production container id, which meant GTM_ID was
+// never falsy: `isEnabled()` was always true, the inline loader in
+// src/app/layout.tsx hardcoded the same id independently, and the documented
+// kill-switch ("unset NEXT_PUBLIC_GTM_ID and no tag is injected") did not
+// exist. The practical effect was that `npm run dev` shipped localhost traffic
+// into the production analytics property.
+//
+// No fallback by design. Unset (or empty) means OFF everywhere, so local work
+// never reaches production data. A deployment that wants analytics must set
+// NEXT_PUBLIC_GTM_ID — see .env.example.
+const CONFIGURED_GTM_ID = process.env.NEXT_PUBLIC_GTM_ID?.trim() ?? "";
+export const GTM_ID =
+  CONFIGURED_GTM_ID.toLowerCase() === "0" || CONFIGURED_GTM_ID.toLowerCase() === "off"
+    ? ""
+    : CONFIGURED_GTM_ID;
 
 export const ANALYTICS_EVENTS = {
   SIGNUP_STARTED: "signup_started",

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { getServerClient } from "@/lib/insforge";
 import { SignupCompletedTracker } from "@/components/signup-completed-tracker";
+import { formatDate, formatTokens, formatUsd } from "@/lib/format";
 
 export const metadata: Metadata = {
   title: "Dashboard",
@@ -50,17 +51,17 @@ export default async function DashboardPage() {
       <section className="cards">
         <article className="card">
           <p className="card-label">Total runs</p>
-          <p className="card-value">{totalRuns ?? 0}</p>
+          <p className="card-value">{totalRuns ?? "—"}</p>
         </article>
         <article className="card">
           <p className="card-label">Active API keys</p>
-          <p className="card-value">{totalKeys ?? 0}</p>
+          <p className="card-value">{totalKeys ?? "—"}</p>
         </article>
       </section>
 
       <section>
         <h2>Recent runs</h2>
-        {runs && runs.length > 0 ? (
+        {runs === null ? null : runs.length > 0 ? (
           <table className="ledger">
             <thead>
               <tr>
@@ -80,11 +81,11 @@ export default async function DashboardPage() {
                   </td>
                   <td>{run.agent_name}</td>
                   <td>{run.status}</td>
-                  <td>{run.started_at ? new Date(run.started_at).toLocaleString() : "-"}</td>
+                  <td>{formatDate(run.started_at)}</td>
                   <td className="num">
-                    {run.tokens_in + run.tokens_out}
+                    {formatTokens(run.tokens_in, run.tokens_out)}
                   </td>
-                  <td className="num">${run.cost_usd}</td>
+                  <td className="num">{formatUsd(run.cost_usd)}</td>
                 </tr>
               ))}
             </tbody>
@@ -96,7 +97,7 @@ export default async function DashboardPage() {
 
       <section>
         <h2>API keys</h2>
-        {keys && keys.length > 0 ? (
+        {keys === null ? null : keys.length > 0 ? (
           <table className="ledger">
             <thead>
               <tr>

@@ -12,8 +12,11 @@ const SAFE_PATTERNS: RegExp[] = [
   /rate ?limit|too many (requests|attempts)/i,
   /password (should|must|is too|does not)/i,
   /verification (code|email)/i,
-  /expired/i,
-  /required/i,
+  // Anchored to a credential noun. The previous bare /expired/i and /required/i
+  // matched almost any driver string, so internal text such as
+  // "column profiles.plan is required" was rendered to the customer verbatim.
+  /(code|token|link|otp|session|reset link) (has )?expired/i,
+  /(email|password|code|otp) is required/i,
   /signups? (are )?not allowed/i,
   /email (address )?invalid/i,
 ];

@@ -26,11 +26,20 @@ export default async function ApiKeysPage() {
   }> | null = null;
   let keysError = false;
   try {
-    const { data } = await insforge.database
+    const { data, error } = await insforge.database
       .from("api_keys")
       .select("id,name,key_prefix,is_active,last_used_at,created_at")
       .order("created_at", { ascending: false });
-    keys = data;
+    // The SDK resolves with { data, error } and does NOT throw, so try/catch
+    // alone cannot tell an outage apart from "you have no keys". Without this
+    // check an unreachable database renders "No keys yet. Create one above.",
+    // telling customers their keys are gone and sending them to recreate them.
+    if (error) {
+      console.error("[app/api-keys] key listing failed:", error.message);
+      keysError = true;
+    } else {
+      keys = data;
+    }
   } catch (error) {
     keysError = true;
     console.error("[app/api-keys] key listing failed:", error instanceof Error ? error.message : error);

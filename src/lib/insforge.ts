@@ -1,7 +1,8 @@
 import { createBrowserClient, createServerClient, createAuthActions } from "@insforge/sdk/ssr";
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 import * as React from "react";
 import { publicAppEnv } from "./env";
+import { REFRESHED_ACCESS_TOKEN_HEADER } from "./session-header";
 
 export function getBrowserClient() {
   const baseUrl = process.env.NEXT_PUBLIC_INSFORGE_URL;
@@ -19,9 +20,14 @@ export function getBrowserClient() {
 export async function getServerClient() {
   const env = publicAppEnv();
   const cookieStore = await cookies();
+  // SESSION-TTL: the 900s access token is stale in the request cookie by the time a
+  // route runs, and the SDK's read-only cookie adapter cannot rewrite it. Use the
+  // token middleware refreshed for this same request.
+  const refreshed = (await headers()).get(REFRESHED_ACCESS_TOKEN_HEADER);
   return createServerClient({
     baseUrl: env.NEXT_PUBLIC_INSFORGE_URL,
     anonKey: env.NEXT_PUBLIC_INSFORGE_ANON_KEY,
+    ...(refreshed ? { accessToken: refreshed } : {}),
     cookies: {
       get: (name: string) => {
         const cookie = cookieStore.get(name);

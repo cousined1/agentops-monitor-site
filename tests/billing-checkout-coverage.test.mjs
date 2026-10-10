@@ -129,6 +129,35 @@ describe("billing checkout route coverage closure", () => {
     });
   });
 
+  it("normalises plan casing instead of rejecting it as unknown", async () => {
+    // The validator regex only accepts lowercase, so "Team" failed the test and
+    // fell through to the "unknown" branch - producing `Unknown plan: unknown`,
+    // which names a plan the customer never asked for. Casing is normalised
+    // first so the real plan resolves.
+    getPlanByName.mockResolvedValue({
+      id: "plan-team",
+      name: "team",
+      stripe_price_id: null,
+      included_runs: 500_000,
+      price_usd_cents: 29900,
+      overage_per_1k: 100,
+    });
+    getPlanPriceId.mockResolvedValue(null);
+    const { POST } = await import("../src/app/api/billing/checkout/route.ts");
+
+    const response = await POST(checkoutRequest("TeAm"));
+
+    // It got past the selector and failed later, on the missing Stripe price.
+    expect(response.status).toBe(503);
+    await expect(response.json()).resolves.toEqual({
+      error: {
+        message: 'Plan "team" has no Stripe price configured yet.',
+        code: "price_not_configured",
+      },
+    });
+    expect(getPlanByName).toHaveBeenCalledWith("team");
+  });
+
   it("maps a plan without a Stripe price to 503 price_not_configured", async () => {
     getPlanPriceId.mockResolvedValue(null);
     const { POST } = await import("../src/app/api/billing/checkout/route.ts");

@@ -1,11 +1,12 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { getServerClient } from "@/lib/insforge";
 import { ensureProfileBilling, getProfileByUserId } from "@/lib/billing";
+import { apiError } from "@/lib/api-error";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   const insforge = await getServerClient();
   const { data: userData, error: authError } = await insforge.auth.getCurrentUser();
 
@@ -13,14 +14,11 @@ export async function GET(request: NextRequest) {
   // outage instead of a false 401.
   if (authError) {
     console.error("[billing/status] getCurrentUser failed:", authError.message);
-    return NextResponse.json(
-      { error: "Service temporarily unavailable" },
-      { status: 503 },
-    );
+    return apiError(503, "Service temporarily unavailable", "auth_unavailable");
   }
 
   const user = userData?.user;
-  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!user) return apiError(401, "Unauthorized", "unauthorized");
 
   try {
     // F-03: a missing profile (failed signup write) is repaired on read so an
@@ -36,9 +34,6 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     // DB outage: 503, never a false 200 with default "free/inactive" data.
     console.error("[billing/status] profile read failed:", error instanceof Error ? error.message : error);
-    return NextResponse.json(
-      { error: "Service temporarily unavailable" },
-      { status: 503 },
-    );
+    return apiError(503, "Service temporarily unavailable", "profile_unavailable");
   }
 }

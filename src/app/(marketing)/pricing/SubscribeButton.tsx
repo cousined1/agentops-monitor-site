@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 
 export default function SubscribeButton({
@@ -21,7 +21,7 @@ export default function SubscribeButton({
   const router = useRouter();
   const startedRef = useRef(false);
 
-  async function startCheckout() {
+  const startCheckout = useCallback(async () => {
     if (disabledReason) {
       setNote(disabledReason);
       return;
@@ -59,7 +59,7 @@ export default function SubscribeButton({
     } finally {
       setBusy(false);
     }
-  }
+  }, [disabledReason, plan, router]);
 
   async function openBillingPortal() {
     if (disabledReason) {
@@ -96,7 +96,7 @@ export default function SubscribeButton({
     if (!autoStart || subscribed || startedRef.current) return;
     startedRef.current = true;
     void startCheckout();
-  }, [autoStart, subscribed]);
+  }, [autoStart, startCheckout, subscribed]);
 
   return (
     <span>
